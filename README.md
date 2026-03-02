@@ -78,4 +78,4 @@ The agent file at `~/.claude/agents/harsh-critic.md` is automatically available 
 
 ## License
 
-MIT
+Apache 2.0
