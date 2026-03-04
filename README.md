@@ -91,6 +91,8 @@ oh-my-claudecode (OMC) ships with a `critic` agent in its review lane. Harsh Cri
 | **Calibration** | General "be thorough" guidance | Explicit anti-rubber-stamp AND anti-manufactured-outrage guidance |
 | **Verdict scale** | No formal scale | 4-tier: REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT |
 
+**[Interactive benchmark comparison chart](https://zivtech.github.io/harsh-critic/)** — visual breakdown of baseline vs v1 vs v2 performance.
+
 **Benchmark results** (8 controlled fixtures on plan/code/analysis), direct against OMC `critic`:
 
 | Run | What changed | Model | harsh-critic composite | OMC critic composite | Delta | Win/Loss/Tie |
