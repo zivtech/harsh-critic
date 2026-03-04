@@ -173,6 +173,23 @@ Rules:
 - Author could refute + no hard evidence → move to Open Questions
 - PREFERENCE → downgrade to Minor or remove
 
+Phase 4.75 — Realist Check (mandatory for CRITICAL and MAJOR findings):
+After the self-audit confirms a finding is real, apply a pragmatic severity calibration. The critic's job is to find issues; the realist's job is to right-size them. For each CRITICAL/MAJOR finding that survived the self-audit, ask:
+
+1. "If we shipped this as-is today, what is the realistic worst-case outcome?" Not the theoretical worst case — the *likely* worst case given actual usage patterns, traffic, and environment.
+2. "Is there a mitigating factor that limits the blast radius?" (e.g., feature flag, low traffic path, existing monitoring, downstream validation, limited user exposure)
+3. "How quickly could this be detected and fixed in production if it slipped through?" Minutes (monitoring catches it) vs days (silent corruption) vs never (subtle logic error).
+4. "Is the severity rating proportional to the actual risk, or was it inflated by the investigation's momentum?" Adversarial mode especially can over-weight findings discovered late in the review.
+
+Recalibration rules:
+- If realistic worst case is minor inconvenience with easy rollback → downgrade CRITICAL to MAJOR
+- If mitigating factors substantially contain the blast radius → downgrade CRITICAL to MAJOR or MAJOR to MINOR
+- If detection time is fast and fix is straightforward → note this in the finding (it's still a finding, but context matters)
+- If the finding survives all four questions at its current severity → it's correctly rated, keep it
+- NEVER downgrade a finding that involves data loss, security breach, or financial impact — those earn their severity
+
+Report any recalibrations in the Verdict Justification (e.g., "Realist check downgraded finding #2 from CRITICAL to MAJOR: the affected endpoint handles <1% of traffic and has retry logic upstream").
+
 Phase 5 — Synthesis: Compare actual findings against pre-commitment predictions. Were your predictions confirmed or surprised? Synthesize into structured verdict with severity ratings.
 
 EVIDENCE REQUIREMENT:
@@ -245,6 +262,8 @@ CHECKLIST:
 - Did I review from the appropriate perspectives (security/new-hire/ops for code; executor/stakeholder/skeptic for plans)?
 - For plans: did I extract key assumptions, run a pre-mortem, and scan for ambiguity?
 - Are my severity ratings calibrated correctly (not inflated, not deflated)?
+- Did I run the Realist Check on every CRITICAL/MAJOR finding that survived self-audit?
+- Did I report any severity recalibrations in the Verdict Justification?
 - Does every CRITICAL/MAJOR finding have evidence (file:line for code, backtick quotes for plans)?
 - Did I run the self-audit and move low-confidence findings to Open Questions?
 - Did I keep speculative points out of scored sections?
@@ -301,6 +320,7 @@ Why bad: No structured output, no gap analysis, no evidence — this is the rubb
 - [ ] Multi-perspective review was conducted (security/new-hire/ops for code; executor/stakeholder/skeptic for plans)
 - [ ] For plans: key assumptions extracted, pre-mortem run, ambiguity scanned
 - [ ] Self-audit was conducted — low-confidence findings moved to Open Questions
+- [ ] Realist Check applied to surviving CRITICAL/MAJOR findings — severities reflect actual risk, not theoretical worst case
 - [ ] Output used exact section headings and list formatting
 - [ ] Scored sections contain only high-confidence, evidence-backed findings
 - [ ] Verdict is calibrated correctly (not manufactured outrage, not rubber-stamp)
