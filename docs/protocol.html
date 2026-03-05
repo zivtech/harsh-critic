@@ -655,20 +655,20 @@
   <!-- STAT BAR -->
   <div class="stat-bar">
     <div class="stat anim-scale" style="--i:2">
-      <div class="number">33</div>
-      <div class="label">Gap items found</div>
+      <div class="number">58.6%</div>
+      <div class="label">Composite score</div>
     </div>
     <div class="stat anim-scale" style="--i:3">
-      <div class="number">0</div>
-      <div class="label">Without protocol</div>
+      <div class="number">7–0</div>
+      <div class="label">Win–loss record</div>
     </div>
     <div class="stat anim-scale" style="--i:4">
-      <div class="number">5</div>
-      <div class="label">Investigation phases</div>
+      <div class="number">62.5%</div>
+      <div class="label">Missing coverage</div>
     </div>
     <div class="stat anim-scale" style="--i:5">
-      <div class="number">8</div>
-      <div class="label">A/B test fixtures</div>
+      <div class="number">33 vs 0</div>
+      <div class="label">Gap items (A/B test)</div>
     </div>
   </div>
 
@@ -759,6 +759,20 @@
             </div>
           </div>
         </div>
+        <div class="escalation" style="margin:16px 0 0;border-radius:8px;padding:14px 18px">
+          <div class="escalation-header" style="margin-bottom:6px">
+            <div class="icon-box" style="width:24px;height:24px;border-radius:6px">
+              <svg viewBox="0 0 20 20" style="width:12px;height:12px"><path d="M10 4v8M10 15v1M4 10h2M14 10h2M6.5 6.5l1.4 1.4M12.1 12.1l1.4 1.4M6.5 13.5l1.4-1.4M12.1 7.9l1.4-1.4"/></svg>
+            </div>
+            <span class="escalation-title" style="font-size:16px">Adaptive Harshness</span>
+          </div>
+          <p class="escalation-desc" style="margin-bottom:8px">Starts in <strong style="color:var(--text)">THOROUGH</strong> mode. Escalates to <strong style="color:var(--amber)">ADVERSARIAL</strong> if serious problems surface during Phases 2&ndash;4 &mdash; actively hunting for hidden issues and expanding scope.</p>
+          <div class="escalation-triggers">
+            <span class="trigger">Any CRITICAL finding</span>
+            <span class="trigger">3+ MAJOR findings</span>
+            <span class="trigger">Systemic pattern</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -817,6 +831,10 @@
           <li>Is momentum bias inflating the severity?</li>
         </ul>
         <p class="phase-desc" style="margin-top:12px">Findings where real-world impact doesn't match the label get downgraded. Every downgrade must include a <code>"Mitigated by: ..."</code> statement explaining the real-world factor that justifies the lower severity. Recalibrations are reported in the Verdict Justification.</p>
+        <div class="chips" style="margin-top:14px">
+          <span class="chip chip--accent">Every downgrade requires "Mitigated by: …"</span>
+          <span class="chip">Recalibrations reported in verdict</span>
+        </div>
         <div class="guardrail">
           <div class="guardrail-icon">
             <svg viewBox="0 0 12 12"><path d="M6 3v4M6 9v0.5"/></svg>
@@ -828,22 +846,6 @@
       </div>
     </div>
 
-    <!-- ADAPTIVE HARSHNESS (interstitial) -->
-  </div>
-
-  <div class="escalation anim" style="--i:18">
-    <div class="escalation-header">
-      <div class="icon-box">
-        <svg viewBox="0 0 20 20"><path d="M10 4v8M10 15v1M4 10h2M14 10h2M6.5 6.5l1.4 1.4M12.1 12.1l1.4 1.4M6.5 13.5l1.4-1.4M12.1 7.9l1.4-1.4"/></svg>
-      </div>
-      <span class="escalation-title">Adaptive Harshness</span>
-    </div>
-    <p class="escalation-desc">Reviews start in <strong style="color:var(--text)">THOROUGH</strong> mode &mdash; precise, evidence-driven, measured. If the investigation uncovers serious problems, it escalates to <strong style="color:var(--amber)">ADVERSARIAL</strong> mode, actively hunting for hidden problems and expanding scope.</p>
-    <div class="escalation-triggers">
-      <span class="trigger">Any CRITICAL finding</span>
-      <span class="trigger">3+ MAJOR findings</span>
-      <span class="trigger">Systemic pattern detected</span>
-    </div>
   </div>
 
   <div class="timeline">
