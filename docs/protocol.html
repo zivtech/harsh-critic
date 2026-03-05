@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>harsh-critic Investigation Protocol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-display: 'Instrument Serif', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+    --bg: #f7f5f0;
+    --surface: #ffffff;
+    --surface2: #f0ede6;
+    --surface-elevated: #fffdf8;
+    --border: rgba(0, 0, 0, 0.07);
+    --border-bright: rgba(0, 0, 0, 0.14);
+    --text: #1e2a3a;
+    --text-dim: #6b7a8d;
+
+    --navy: #1e3a5f;
+    --navy-dim: rgba(30, 58, 95, 0.07);
+    --gold: #b8860b;
+    --gold-dim: rgba(184, 134, 11, 0.08);
+    --gold-bright: #d4a73a;
+    --teal: #0f766e;
+    --teal-dim: rgba(15, 118, 110, 0.07);
+    --red: #be123c;
+    --red-dim: rgba(190, 18, 60, 0.07);
+    --amber: #b45309;
+    --amber-dim: rgba(180, 83, 9, 0.07);
+    --sage: #4d7c0f;
+    --sage-dim: rgba(77, 124, 15, 0.07);
+    --slate: #475569;
+    --slate-dim: rgba(71, 85, 105, 0.07);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1a2e;
+      --surface: #162035;
+      --surface2: #1c2840;
+      --surface-elevated: #1f2d48;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-bright: rgba(255, 255, 255, 0.12);
+      --text: #e2e8f0;
+      --text-dim: #8b9ab5;
+
+      --navy: #93b8e0;
+      --navy-dim: rgba(147, 184, 224, 0.1);
+      --gold: #f0c854;
+      --gold-dim: rgba(240, 200, 84, 0.1);
+      --gold-bright: #f0c854;
+      --teal: #5eead4;
+      --teal-dim: rgba(94, 234, 212, 0.08);
+      --red: #fda4af;
+      --red-dim: rgba(253, 164, 175, 0.08);
+      --amber: #fbbf24;
+      --amber-dim: rgba(251, 191, 36, 0.08);
+      --sage: #bef264;
+      --sage-dim: rgba(190, 242, 100, 0.08);
+      --slate: #94a3b8;
+      --slate-dim: rgba(148, 163, 184, 0.08);
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse at 15% 0%, var(--navy-dim) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 100%, var(--gold-dim) 0%, transparent 40%);
+    color: var(--text);
+    font-family: var(--font-body);
+    padding: 48px 24px;
+    min-height: 100vh;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeScale {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .anim {
+    animation: fadeUp 0.45s ease-out both;
+    animation-delay: calc(var(--i, 0) * 0.06s);
+  }
+  .anim-scale {
+    animation: fadeScale 0.4s ease-out both;
+    animation-delay: calc(var(--i, 0) * 0.06s);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  /* ============ HERO ============ */
+  .hero {
+    margin-bottom: 48px;
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: 46px;
+    font-weight: 400;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .hero h1 em {
+    color: var(--gold);
+    font-style: italic;
+  }
+
+  .hero .tagline {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .hero .lead {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    max-width: 640px;
+    margin: 20px auto 0;
+  }
+
+  /* ============ STAT BAR ============ */
+  .stat-bar {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin: 32px 0 48px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat .number {
+    font-family: var(--font-display);
+    font-size: 42px;
+    font-weight: 400;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .stat .label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-top: 4px;
+  }
+
+  /* ============ TIMELINE ============ */
+  .timeline {
+    position: relative;
+    padding-left: 0;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 28px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(
+      to bottom,
+      var(--navy) 0%,
+      var(--gold) 45%,
+      var(--teal) 65%,
+      var(--sage) 80%,
+      var(--navy) 100%
+    );
+    opacity: 0.3;
+  }
+
+  .phase {
+    position: relative;
+    padding-left: 72px;
+    margin-bottom: 28px;
+  }
+
+  .phase:last-child { margin-bottom: 0; }
+
+  .phase-marker {
+    position: absolute;
+    left: 10px;
+    top: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    border: 2px solid;
+    z-index: 1;
+  }
+
+  .phase-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 26px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .phase-card:hover {
+    border-color: var(--border-bright);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+
+  .phase-card--hero {
+    background: var(--surface-elevated);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    padding: 26px 30px;
+  }
+
+  .phase-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .phase-num {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    flex-shrink: 0;
+  }
+
+  .phase-title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 400;
+    line-height: 1.2;
+  }
+
+  .phase-desc {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+
+  .phase-desc:last-child { margin-bottom: 0; }
+
+  /* ============ DETAIL CHIPS ============ */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  .chip--accent {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+    background: var(--gold-dim);
+  }
+
+  .chip--navy {
+    border-color: var(--navy-dim);
+    color: var(--navy);
+    background: var(--navy-dim);
+  }
+
+  .chip--teal {
+    border-color: var(--teal-dim);
+    color: var(--teal);
+    background: var(--teal-dim);
+  }
+
+  .chip--red {
+    border-color: var(--red-dim);
+    color: var(--red);
+    background: var(--red-dim);
+  }
+
+  .chip--sage {
+    border-color: var(--sage-dim);
+    color: var(--sage);
+    background: var(--sage-dim);
+  }
+
+  /* ============ PERSPECTIVE GRID ============ */
+  .persp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .persp-col-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  .persp-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+
+  .persp-item .role {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+
+  .persp-item .asks {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* ============ QUESTIONS LIST ============ */
+  .q-list {
+    list-style: none;
+    margin-top: 10px;
+  }
+
+  .q-list li {
+    position: relative;
+    padding-left: 20px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+    font-style: italic;
+  }
+
+  .q-list li::before {
+    content: '?';
+    position: absolute;
+    left: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: italic;
+    color: var(--gold);
+    font-size: 16px;
+  }
+
+  /* ============ GUARDRAIL ============ */
+  .guardrail {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 14px;
+    background: var(--red-dim);
+    border: 1px solid var(--red-dim);
+    border-left: 3px solid var(--red);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+
+  .guardrail strong { color: var(--red); font-weight: 600; }
+
+  .guardrail-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
+  .guardrail-icon svg {
+    width: 10px;
+    height: 10px;
+    fill: none;
+    stroke: #fff;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+
+  /* ============ ESCALATION BOX ============ */
+  .escalation {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    border-radius: 0 10px 10px 0;
+    padding: 20px 24px;
+    margin: 28px 0 28px 72px;
+  }
+
+  .escalation-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .escalation-header .icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--amber-dim);
+    border: 1px solid var(--amber-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .escalation-header .icon-box svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: var(--amber);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .escalation-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 400;
+  }
+
+  .escalation-desc {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .escalation-triggers {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .trigger {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    background: var(--amber-dim);
+    border: 1px solid var(--amber-dim);
+    color: var(--amber);
+  }
+
+  /* ============ OUTPUT FORMAT ============ */
+  .output-section {
+    margin-top: 48px;
+  }
+
+  .output-section h2 {
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 400;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  .output-subtitle {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 24px;
+    letter-spacing: 0.5px;
+  }
+
+  .verdict-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .verdict-card {
+    text-align: center;
+    padding: 16px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .verdict-card .v-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .verdict-card .v-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  .v-reject { border-color: var(--red-dim); }
+  .v-reject .v-label { color: var(--red); }
+
+  .v-revise { border-color: var(--amber-dim); }
+  .v-revise .v-label { color: var(--amber); }
+
+  .v-reserv { border-color: var(--gold-dim); }
+  .v-reserv .v-label { color: var(--gold); }
+
+  .v-accept { border-color: var(--sage-dim); }
+  .v-accept .v-label { color: var(--sage); }
+
+  .output-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .output-field {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .output-field .f-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .output-field .f-name {
+    font-weight: 600;
+    font-size: 13px;
+    min-width: 0;
+  }
+
+  .output-field .f-detail {
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  .output-field--full {
+    grid-column: 1 / -1;
+  }
+
+  /* ============ PHASE COLORS ============ */
+  .c-navy .phase-marker { background: var(--navy-dim); border-color: var(--navy); color: var(--navy); }
+  .c-navy .phase-num { color: var(--navy); }
+
+  .c-gold .phase-marker { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+  .c-gold .phase-num { color: var(--gold); }
+
+  .c-teal .phase-marker { background: var(--teal-dim); border-color: var(--teal); color: var(--teal); }
+  .c-teal .phase-num { color: var(--teal); }
+
+  .c-red .phase-marker { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+  .c-red .phase-num { color: var(--red); }
+
+  .c-sage .phase-marker { background: var(--sage-dim); border-color: var(--sage); color: var(--sage); }
+  .c-sage .phase-num { color: var(--sage); }
+
+  .c-slate .phase-marker { background: var(--slate-dim); border-color: var(--slate); color: var(--slate); }
+  .c-slate .phase-num { color: var(--slate); }
+
+  .c-amber .phase-marker { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+  .c-amber .phase-num { color: var(--amber); }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 768px) {
+    body { padding: 24px 16px; }
+    .hero h1 { font-size: 32px; }
+    .stat-bar { gap: 24px; }
+    .stat .number { font-size: 32px; }
+    .persp-grid { grid-template-columns: 1fr; }
+    .verdict-grid { grid-template-columns: 1fr 1fr; }
+    .output-fields { grid-template-columns: 1fr; }
+    .output-field--full { grid-column: 1; }
+    .phase { padding-left: 60px; }
+    .timeline::before { left: 22px; }
+    .phase-marker { left: 4px; width: 34px; height: 34px; font-size: 10px; }
+    .escalation { margin-left: 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero anim" style="--i:0">
+    <p class="tagline">structured investigation protocol</p>
+    <h1>harsh-critic finds what's wrong<br><em>and what's missing</em></h1>
+    <p class="lead">A 5-phase review protocol that forces systematic coverage through pre-commitment predictions, multi-perspective investigation, explicit gap analysis, confidence-gated self-audit, and pragmatic severity calibration.</p>
+  </div>
+
+  <!-- STAT BAR -->
+  <div class="stat-bar">
+    <div class="stat anim-scale" style="--i:2">
+      <div class="number">33</div>
+      <div class="label">Gap items found</div>
+    </div>
+    <div class="stat anim-scale" style="--i:3">
+      <div class="number">0</div>
+      <div class="label">Without protocol</div>
+    </div>
+    <div class="stat anim-scale" style="--i:4">
+      <div class="number">5</div>
+      <div class="label">Investigation phases</div>
+    </div>
+    <div class="stat anim-scale" style="--i:5">
+      <div class="number">8</div>
+      <div class="label">A/B test fixtures</div>
+    </div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="timeline">
+
+    <!-- PHASE 1 -->
+    <div class="phase c-navy anim" style="--i:6">
+      <div class="phase-marker">1</div>
+      <div class="phase-card phase-card--hero">
+        <div class="phase-header">
+          <span class="phase-num">Phase 1</span>
+          <span class="phase-title">Pre-commitment Predictions</span>
+        </div>
+        <p class="phase-desc">Before reading the work in detail, predict the 3-5 most likely problem areas based on type and domain. This activates deliberate search &mdash; instead of passively reading and reacting, the reviewer enters with specific hypotheses to confirm or reject.</p>
+        <div class="chips">
+          <span class="chip chip--navy">Hypothesis-driven</span>
+          <span class="chip chip--navy">Domain-aware</span>
+          <span class="chip chip--navy">3-5 predictions</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 2 -->
+    <div class="phase c-gold anim" style="--i:8">
+      <div class="phase-marker">2</div>
+      <div class="phase-card">
+        <div class="phase-header">
+          <span class="phase-num">Phase 2</span>
+          <span class="phase-title">Verification</span>
+        </div>
+        <p class="phase-desc">Every technical claim is verified against the actual codebase. No assertion is taken on trust. The approach adapts to the artifact type:</p>
+        <div class="persp-grid">
+          <div>
+            <div class="persp-col-label" style="color:var(--gold)">For code</div>
+            <div class="persp-item">
+              <div class="asks">Trace execution paths, especially error paths and edge cases. Check off-by-one errors, race conditions, missing null checks, incorrect type assumptions, security oversights.</div>
+            </div>
+          </div>
+          <div>
+            <div class="persp-col-label" style="color:var(--gold)">For plans</div>
+            <div class="persp-item">
+              <div class="asks">6-step investigation: assumptions extraction, pre-mortem analysis, dependency audit, ambiguity scan, feasibility check, rollback analysis. Devil's advocate challenge on each major decision.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 3 -->
+    <div class="phase c-teal anim" style="--i:10">
+      <div class="phase-marker">3</div>
+      <div class="phase-card">
+        <div class="phase-header">
+          <span class="phase-num">Phase 3</span>
+          <span class="phase-title">Multi-perspective Review</span>
+        </div>
+        <p class="phase-desc">The work is re-examined from distinct angles adapted to what's being reviewed:</p>
+        <div class="persp-grid">
+          <div>
+            <div class="persp-col-label" style="color:var(--teal)">For code</div>
+            <div class="persp-item" style="margin-bottom:8px">
+              <div class="role">Security Engineer</div>
+              <div class="asks">Trust boundaries, unvalidated input, exploitation vectors</div>
+            </div>
+            <div class="persp-item" style="margin-bottom:8px">
+              <div class="role">New Hire</div>
+              <div class="asks">Can someone unfamiliar follow this? What context is assumed?</div>
+            </div>
+            <div class="persp-item">
+              <div class="role">Ops Engineer</div>
+              <div class="asks">Behavior at scale, under load, when dependencies fail. Blast radius.</div>
+            </div>
+          </div>
+          <div>
+            <div class="persp-col-label" style="color:var(--teal)">For plans</div>
+            <div class="persp-item" style="margin-bottom:8px">
+              <div class="role">Executor</div>
+              <div class="asks">Can I complete each step with only what's written? Where will I get stuck?</div>
+            </div>
+            <div class="persp-item" style="margin-bottom:8px">
+              <div class="role">Stakeholder</div>
+              <div class="asks">Does this solve the stated problem? Are success criteria meaningful?</div>
+            </div>
+            <div class="persp-item">
+              <div class="role">Skeptic</div>
+              <div class="asks">What's the strongest argument this approach will fail?</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 4 -->
+    <div class="phase c-red anim" style="--i:12">
+      <div class="phase-marker">4</div>
+      <div class="phase-card phase-card--hero">
+        <div class="phase-header">
+          <span class="phase-num">Phase 4 &mdash; Core Differentiator</span>
+          <span class="phase-title">Gap Analysis</span>
+        </div>
+        <p class="phase-desc">This is the phase that makes the skill useful. The reviewer explicitly searches for what isn't there &mdash; the omissions, the unconsidered, the conveniently skipped:</p>
+        <ul class="q-list">
+          <li>What would break this?</li>
+          <li>What edge case isn't handled?</li>
+          <li>What assumption could be wrong?</li>
+          <li>What was conveniently left out?</li>
+        </ul>
+        <div class="chips" style="margin-top:14px">
+          <span class="chip chip--accent">33 gap items found in A/B tests</span>
+          <span class="chip chip--red">0 without this phase</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 4.5 -->
+    <div class="phase c-slate anim" style="--i:14">
+      <div class="phase-marker">4.5</div>
+      <div class="phase-card">
+        <div class="phase-header">
+          <span class="phase-num">Phase 4.5</span>
+          <span class="phase-title">Self-Audit</span>
+        </div>
+        <p class="phase-desc">A metacognitive check on all findings before finalizing. Each CRITICAL/MAJOR finding is assessed for confidence level, refutability, and whether it's a genuine flaw vs. a stylistic preference. Low-confidence findings are moved to Open Questions rather than scored sections.</p>
+        <div class="chips">
+          <span class="chip">HIGH confidence &rarr; scored</span>
+          <span class="chip">MEDIUM confidence &rarr; scored + flagged</span>
+          <span class="chip chip--accent">LOW confidence &rarr; Open Questions</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 4.75 -->
+    <div class="phase c-amber anim" style="--i:16">
+      <div class="phase-marker">4.75</div>
+      <div class="phase-card">
+        <div class="phase-header">
+          <span class="phase-num">Phase 4.75</span>
+          <span class="phase-title">Realist Check</span>
+        </div>
+        <p class="phase-desc">Pragmatic severity calibration for CRITICAL and MAJOR findings. Each high-severity finding is pressure-tested with four questions:</p>
+        <ul class="q-list">
+          <li>What's the realistic worst case?</li>
+          <li>What mitigating factors exist?</li>
+          <li>How quickly would this be detected?</li>
+          <li>Is momentum bias inflating the severity?</li>
+        </ul>
+        <p class="phase-desc" style="margin-top:12px">Findings where real-world impact doesn't match the label get downgraded. Every downgrade must include a <code>"Mitigated by: ..."</code> statement explaining the real-world factor that justifies the lower severity. Recalibrations are reported in the Verdict Justification.</p>
+        <div class="guardrail">
+          <div class="guardrail-icon">
+            <svg viewBox="0 0 12 12"><path d="M6 3v4M6 9v0.5"/></svg>
+          </div>
+          <div>
+            <strong>Hard guardrail:</strong> Data loss, security breaches, and financial impact findings are never downgraded, regardless of mitigating factors.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADAPTIVE HARSHNESS (interstitial) -->
+  </div>
+
+  <div class="escalation anim" style="--i:18">
+    <div class="escalation-header">
+      <div class="icon-box">
+        <svg viewBox="0 0 20 20"><path d="M10 4v8M10 15v1M4 10h2M14 10h2M6.5 6.5l1.4 1.4M12.1 12.1l1.4 1.4M6.5 13.5l1.4-1.4M12.1 7.9l1.4-1.4"/></svg>
+      </div>
+      <span class="escalation-title">Adaptive Harshness</span>
+    </div>
+    <p class="escalation-desc">Reviews start in <strong style="color:var(--text)">THOROUGH</strong> mode &mdash; precise, evidence-driven, measured. If the investigation uncovers serious problems, it escalates to <strong style="color:var(--amber)">ADVERSARIAL</strong> mode, actively hunting for hidden problems and expanding scope.</p>
+    <div class="escalation-triggers">
+      <span class="trigger">Any CRITICAL finding</span>
+      <span class="trigger">3+ MAJOR findings</span>
+      <span class="trigger">Systemic pattern detected</span>
+    </div>
+  </div>
+
+  <div class="timeline">
+    <!-- PHASE 5 -->
+    <div class="phase c-sage anim" style="--i:20">
+      <div class="phase-marker">5</div>
+      <div class="phase-card">
+        <div class="phase-header">
+          <span class="phase-num">Phase 5</span>
+          <span class="phase-title">Synthesis</span>
+        </div>
+        <p class="phase-desc">Findings are compared against pre-commitment predictions, calibrated for severity, and assembled into a structured verdict. The synthesis explicitly tracks which predictions were confirmed, which were wrong, and what was found that wasn't predicted.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTPUT FORMAT -->
+  <div class="output-section anim" style="--i:22">
+    <h2>Structured Output</h2>
+    <p class="output-subtitle">Every review produces a report with these exact sections</p>
+
+    <div class="verdict-grid">
+      <div class="verdict-card v-reject anim-scale" style="--i:23">
+        <div class="v-label">REJECT</div>
+        <div class="v-desc">Fundamental flaws. Cannot proceed.</div>
+      </div>
+      <div class="verdict-card v-revise anim-scale" style="--i:24">
+        <div class="v-label">REVISE</div>
+        <div class="v-desc">Significant rework needed.</div>
+      </div>
+      <div class="verdict-card v-reserv anim-scale" style="--i:25">
+        <div class="v-label">ACCEPT-WITH-RESERVATIONS</div>
+        <div class="v-desc">Proceed with noted concerns.</div>
+      </div>
+      <div class="verdict-card v-accept anim-scale" style="--i:26">
+        <div class="v-label">ACCEPT</div>
+        <div class="v-desc">Clean. Ship it.</div>
+      </div>
+    </div>
+
+    <div class="output-fields">
+      <div class="output-field anim" style="--i:27">
+        <div class="f-dot" style="background:var(--navy)"></div>
+        <div>
+          <div class="f-name">Pre-commitment Predictions</div>
+          <div class="f-detail">Expected vs. found</div>
+        </div>
+      </div>
+      <div class="output-field anim" style="--i:28">
+        <div class="f-dot" style="background:var(--red)"></div>
+        <div>
+          <div class="f-name">Critical Findings</div>
+          <div class="f-detail">Blocks execution. file:line evidence required.</div>
+        </div>
+      </div>
+      <div class="output-field anim" style="--i:29">
+        <div class="f-dot" style="background:var(--amber)"></div>
+        <div>
+          <div class="f-name">Major Findings</div>
+          <div class="f-detail">Significant rework. Evidence required.</div>
+        </div>
+      </div>
+      <div class="output-field anim" style="--i:30">
+        <div class="f-dot" style="background:var(--gold)"></div>
+        <div>
+          <div class="f-name">Minor Findings</div>
+          <div class="f-detail">Suboptimal but functional.</div>
+        </div>
+      </div>
+      <div class="output-field output-field--full anim" style="--i:31">
+        <div class="f-dot" style="background:var(--red)"></div>
+        <div>
+          <div class="f-name">What's Missing</div>
+          <div class="f-detail">The core differentiator. Gaps, unhandled edge cases, unstated assumptions. A/B testing: 33 items found with this section vs. 0 without.</div>
+        </div>
+      </div>
+      <div class="output-field anim" style="--i:32">
+        <div class="f-dot" style="background:var(--teal)"></div>
+        <div>
+          <div class="f-name">Multi-perspective Notes</div>
+          <div class="f-detail">Security, new-hire, ops concerns.</div>
+        </div>
+      </div>
+      <div class="output-field anim" style="--i:33">
+        <div class="f-dot" style="background:var(--gold)"></div>
+        <div>
+          <div class="f-name">Ambiguity Risks</div>
+          <div class="f-detail">Plan reviews only. Multiple valid readings.</div>
+        </div>
+      </div>
+      <div class="output-field anim" style="--i:34">
+        <div class="f-dot" style="background:var(--sage)"></div>
+        <div>
+          <div class="f-name">Verdict Justification</div>
+          <div class="f-detail">Why this verdict. Realist Check recalibrations noted here.</div>
+        </div>
+      </div>
+      <div class="output-field anim" style="--i:35">
+        <div class="f-dot" style="background:var(--slate)"></div>
+        <div>
+          <div class="f-name">Open Questions</div>
+          <div class="f-detail">Low-confidence findings moved here by Self-Audit.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

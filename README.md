@@ -4,6 +4,8 @@ A thorough review skill for [Claude Code](https://docs.anthropic.com/en/docs/cla
 
 Despite the name, this isn't about being harsh for its own sake — it's about being thorough. What works is structured prompting: a fixed investigation protocol, explicit gap analysis, evidence requirements, and adaptive harshness that escalates when serious problems are found. The result is a reviewer that's precise by default and adversarial when warranted.
 
+**[Visual protocol explainer](https://zivtech.github.io/harsh-critic/protocol.html)** — interactive diagram of the full investigation protocol.
+
 ## The problem with standard reviews
 
 LLM-based reviewers default to evaluating what IS present. They scan through code or plans, comment on what they see, and move on. The result is that entire categories of issues — missing error handling, unstated assumptions, absent edge cases — go unreported. Not because the reviewer can't find them, but because it was never prompted to look.
@@ -50,6 +52,10 @@ This is the core differentiator — and the phase that actually makes the skill 
 ### Phase 4.5: Self-audit
 
 A metacognitive check on all findings before finalizing. Each CRITICAL/MAJOR finding is assessed for confidence level (HIGH/MEDIUM/LOW), refutability, and whether it's a genuine flaw vs. a stylistic preference. Low-confidence and easily refutable findings are moved to Open Questions rather than scored sections. This reduces false positives without suppressing real issues.
+
+### Phase 4.75: Realist Check
+
+A pragmatic severity calibration for CRITICAL and MAJOR findings. Each high-severity finding is pressure-tested with four questions: What's the realistic worst case? What mitigating factors exist? How quickly would this be detected? Is momentum bias inflating the severity? Findings where real-world impact doesn't match the label get downgraded. Hard guardrail: data loss, security breaches, and financial impact are never downgraded. Any recalibrations are reported in the Verdict Justification.
 
 ### Adaptive harshness
 

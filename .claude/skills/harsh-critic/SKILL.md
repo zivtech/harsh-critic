@@ -41,33 +41,36 @@ This skill combines that proven structural intervention with multi-perspective i
 </Why_This_Exists>
 
 <Benchmark_Test_Info>
-Latest local benchmark snapshot (from `benchmarks/harsh-critic/results/results_2026-03-03_12-49-36.json`):
+Latest local benchmark snapshot (from `benchmarks/harsh-critic/results/realist-check-run/results_2026-03-05_04-04-23.json`):
 
-- Model: `claude-sonnet-4-6`
+- Model: `claude-opus-4-6`
 - Fixtures: 8 (plan/code/analysis)
-- Composite: harsh-critic `22.1%` vs critic `13.8%` (`+8.4%` delta)
-- Win/Loss/Tie: `5/1/2`
-- Domain deltas:
-  - Code: `+22.4%` (best)
-  - Analysis: `+3.3%`
-  - Plan: `-2.2%` (targeted for improvement in this revision)
-- Weak metrics targeted:
-  - False positives: `40.5%` → target <25% (metacognitive self-audit)
-  - Evidence rate: `0.0%` → target >30% (plan-specific evidence definition)
-  - Missing coverage: `12.5%` → target >30% (pre-mortem + assumptions extraction)
-  - Perspective coverage: `12.5%` → target >25% (plan-specific perspectives)
-- Test harness validation:
-  - `npx vitest run src/__tests__/benchmark-scoring.test.ts`
-  - Result: `84/84` tests passing
+- Composite: harsh-critic `58.6%` vs critic `15.1%` (`+43.5%` delta)
+- Win/Loss/Tie: `7/0/1`
+- Key metrics:
+  - True Positive Rate: `51.8%` vs `12.1%` (+39.8%)
+  - Missing Coverage: `62.5%` vs `6.3%` (+56.3%) — largest single improvement
+  - Evidence Rate: `55.6%` vs `0.0%` (+55.6%)
+  - Perspective Coverage: `39.6%` vs `6.3%` (+33.3%)
+  - False Positive Rate: `78.7%` vs `53.1%` (harsh-critic generates more spurious findings — acceptable tradeoff for higher detection)
+- Standout fixtures:
+  - plan-auth-migration: `83.0%` (9/11 findings matched)
+  - code-payment-handler: `78.2%` (6/9 findings matched)
+  - analysis-incident-review: `71.3%` (6/7 findings matched)
 
-Changes in this revision:
-- Added plan-specific investigation protocol (pre-mortem, key assumptions, dependency audit, ambiguity scan, feasibility check, rollback analysis)
-- Added plan-specific perspectives (executor/stakeholder/skeptic) alongside existing code perspectives (security/new-hire/ops)
-- Added metacognitive self-audit phase (confidence gating to reduce false positives)
-- Redefined evidence requirements for plans (backtick-quoted excerpts, step references, codebase contradictions)
-- Added "Ambiguity Risks" output section for plan reviews
-- Strengthened anti-sycophancy framing with authority identity
-- Added devil's advocate protocol for key decisions in plans
+Changes since last benchmark (v2 → v2 + Realist Check):
+- Added Realist Check phase (Phase 4.75) — pragmatic severity calibration with 4-question pressure test
+- Added "Mitigated by: ..." requirement for every severity downgrade
+- Hard guardrail: data loss, security breach, and financial impact findings never downgraded
+- Recalibrations reported in Verdict Justification
+
+Prior revision changes (v1 → v2, already merged):
+- Plan-specific investigation protocol (pre-mortem, key assumptions, dependency audit, ambiguity scan, feasibility check, rollback analysis)
+- Plan-specific perspectives (executor/stakeholder/skeptic) alongside code perspectives (security/new-hire/ops)
+- Metacognitive self-audit phase (confidence gating to reduce false positives)
+- Evidence requirements for plans (backtick-quoted excerpts, step references, codebase contradictions)
+- "Ambiguity Risks" output section for plan reviews
+- Authority identity framing and devil's advocate protocol
 </Benchmark_Test_Info>
 
 <Best_Times_To_Use>
@@ -187,8 +190,9 @@ Recalibration rules:
 - If detection time is fast and fix is straightforward → note this in the finding (it's still a finding, but context matters)
 - If the finding survives all four questions at its current severity → it's correctly rated, keep it
 - NEVER downgrade a finding that involves data loss, security breach, or financial impact — those earn their severity
+- Every downgrade MUST include a "Mitigated by: ..." statement explaining what real-world factor justifies the lower severity (e.g., "Mitigated by: existing retry logic upstream and <1% traffic on this endpoint"). No downgrade without an explicit mitigation rationale.
 
-Report any recalibrations in the Verdict Justification (e.g., "Realist check downgraded finding #2 from CRITICAL to MAJOR: the affected endpoint handles <1% of traffic and has retry logic upstream").
+Report any recalibrations in the Verdict Justification (e.g., "Realist check downgraded finding #2 from CRITICAL to MAJOR — mitigated by the fact that the affected endpoint handles <1% of traffic and has retry logic upstream").
 
 Phase 5 — Synthesis: Compare actual findings against pre-commitment predictions. Were your predictions confirmed or surprised? Synthesize into structured verdict with severity ratings.
 

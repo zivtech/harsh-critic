@@ -383,20 +383,20 @@
     <div class="score-card baseline">
       <div class="version-label">Baseline</div>
       <div class="version-name">OMC critic</div>
-      <div class="big-number">13.8<span style="font-size:22px">%</span></div>
+      <div class="big-number">15.1<span style="font-size:22px">%</span></div>
       <div class="delta delta-neu">—  reference</div>
     </div>
     <div class="score-card v1">
       <div class="version-label">v1</div>
       <div class="version-name">harsh-critic v1</div>
       <div class="big-number">22.1<span style="font-size:22px">%</span></div>
-      <div class="delta delta-pos">+8.3 pp</div>
+      <div class="delta delta-pos">+8.3 pp <span style="font-size:10px;opacity:.7">(sonnet)</span></div>
     </div>
     <div class="score-card v2">
-      <div class="version-label">v2 target</div>
-      <div class="version-name">harsh-critic v2</div>
-      <div class="big-number">&gt;25<span style="font-size:22px">%</span></div>
-      <div class="delta delta-pos">+11 pp vs baseline</div>
+      <div class="version-label">v2 actual</div>
+      <div class="version-name">harsh-critic v2 + Realist Check</div>
+      <div class="big-number">58.6<span style="font-size:22px">%</span></div>
+      <div class="delta delta-pos">+43.5 pp <span style="font-size:10px;opacity:.7">(opus)</span></div>
     </div>
   </div>
 
@@ -413,7 +413,7 @@
       <span class="icon">⚠</span>
       <div>
         <strong>False Positive Rate — lower is better.</strong>
-        v1 regressed to 40.5% FPR (flagging real non-issues as critical). v2 targets &lt;25%, recovering precision. In the chart below, the FPR bars are displayed inverted: a taller FPR bar means worse performance.
+        v2 on Opus increased FPR to 78.7% — the model generates more spurious findings alongside its dramatically higher detection rate. This is an acceptable tradeoff: 51.8% true positive rate + 62.5% missing coverage far outweighs the noise. The Realist Check and Self-Audit phases help calibrate severity on the findings that matter.
       </div>
     </div>
   </div>
@@ -422,7 +422,7 @@
   <div class="card">
     <div class="section-label" style="margin-bottom:4px">Precision</div>
     <div class="section-title" style="margin-bottom:4px">False Positive Rate (Lower is Better)</div>
-    <div class="section-sub" style="margin-bottom:20px">FPR measures how often the reviewer flags items that are not genuine issues. v1 improved recall but at a precision cost. v2 rebalances both.</div>
+    <div class="section-sub" style="margin-bottom:20px">FPR measures how often the reviewer flags items that are not genuine issues. v2 on Opus trades higher FPR for dramatically better detection. The Self-Audit and Realist Check phases help calibrate what survives into the final report.</div>
     <div class="chart-container">
       <canvas id="fprChart" height="220"></canvas>
     </div>
@@ -432,16 +432,16 @@
   <div class="card">
     <div class="section-label" style="margin-bottom:4px">Domain Breakdown</div>
     <div class="section-title" style="margin-bottom:4px">Score by Review Domain</div>
-    <div class="section-sub" style="margin-bottom:24px">Baseline started at 0 across all domains. v1 excelled at Code, underperformed on Plan. v2 closes the Plan gap.</div>
+    <div class="section-sub" style="margin-bottom:24px">v2 on Opus dramatically improved all three domains. Code showed the largest absolute gain (+51.7 pp), while Plan — the weakest domain in v1 — jumped to the strongest relative improvement.</div>
 
     <table class="domain-table">
       <thead>
         <tr>
           <th>Domain</th>
           <th>Baseline</th>
-          <th>v1 delta</th>
-          <th>v2 target</th>
-          <th style="min-width:200px">v2 trajectory</th>
+          <th>v2 actual</th>
+          <th>Delta</th>
+          <th style="min-width:200px">v2 performance</th>
         </tr>
       </thead>
       <tbody>
@@ -450,15 +450,15 @@
             <span class="domain-icon" style="background:rgba(59,130,246,.12)">💻</span>
             <strong>Code</strong>
           </td>
-          <td><span class="tag tag-gray">0%</span></td>
-          <td><span class="tag tag-blue">+22.4 pp</span></td>
-          <td><span class="tag tag-blue">+22.4 pp <span style="font-size:10px;opacity:.7">(preserved)</span></span></td>
+          <td><span class="tag tag-gray">9.2%</span></td>
+          <td><span class="tag tag-blue">60.8%</span></td>
+          <td><span class="tag tag-green">+51.7 pp</span></td>
           <td class="bar-cell">
             <div class="inline-bar-wrap">
               <div class="inline-bar-track">
-                <div class="inline-bar-fill" style="width:89.6%;background:var(--v2)"></div>
+                <div class="inline-bar-fill" style="width:60.8%;background:var(--v2)"></div>
               </div>
-              <span style="font-size:12px;color:var(--muted);white-space:nowrap">~22.4 pp</span>
+              <span style="font-size:12px;color:var(--muted);white-space:nowrap">60.8%</span>
             </div>
           </td>
         </tr>
@@ -467,15 +467,15 @@
             <span class="domain-icon" style="background:rgba(167,139,250,.12)">🔬</span>
             <strong>Analysis</strong>
           </td>
-          <td><span class="tag tag-gray">0%</span></td>
-          <td><span class="tag tag-blue">+3.3 pp</span></td>
-          <td><span class="tag tag-blue">+3.3 pp <span style="font-size:10px;opacity:.7">(preserved)</span></span></td>
+          <td><span class="tag tag-gray">25.6%</span></td>
+          <td><span class="tag tag-blue">60.1%</span></td>
+          <td><span class="tag tag-green">+34.5 pp</span></td>
           <td class="bar-cell">
             <div class="inline-bar-wrap">
               <div class="inline-bar-track">
-                <div class="inline-bar-fill" style="width:13.2%;background:var(--v2)"></div>
+                <div class="inline-bar-fill" style="width:60.1%;background:var(--v2)"></div>
               </div>
-              <span style="font-size:12px;color:var(--muted);white-space:nowrap">~3.3 pp</span>
+              <span style="font-size:12px;color:var(--muted);white-space:nowrap">60.1%</span>
             </div>
           </td>
         </tr>
@@ -484,15 +484,15 @@
             <span class="domain-icon" style="background:rgba(245,158,11,.12)">📋</span>
             <strong>Plan</strong>
           </td>
-          <td><span class="tag tag-gray">0%</span></td>
-          <td><span class="tag tag-red">−2.2 pp</span></td>
-          <td><span class="tag tag-green">+5–10 pp</span></td>
+          <td><span class="tag tag-gray">14.2%</span></td>
+          <td><span class="tag tag-blue">55.4%</span></td>
+          <td><span class="tag tag-green">+41.2 pp</span></td>
           <td class="bar-cell">
             <div class="inline-bar-wrap">
               <div class="inline-bar-track">
-                <div class="inline-bar-fill" style="width:30%;background:var(--v2)"></div>
+                <div class="inline-bar-fill" style="width:55.4%;background:var(--v2)"></div>
               </div>
-              <span style="font-size:12px;color:var(--muted);white-space:nowrap">+7.5 pp target</span>
+              <span style="font-size:12px;color:var(--muted);white-space:nowrap">55.4%</span>
             </div>
           </td>
         </tr>
@@ -503,8 +503,8 @@
   <!-- What Changed in v2 -->
   <div class="card">
     <div class="section-label" style="margin-bottom:4px">Changelog</div>
-    <div class="section-title" style="margin-bottom:4px">What's New in v2 "Even Harsher"</div>
-    <div class="section-sub" style="margin-bottom:24px">Six targeted changes that address v1's Plan regression and FPR inflation.</div>
+    <div class="section-title" style="margin-bottom:4px">What's New in v2 + Realist Check</div>
+    <div class="section-sub" style="margin-bottom:24px">v2 added plan-specific protocols and self-audit. The Realist Check adds pragmatic severity calibration with mandatory mitigation rationale for every downgrade.</div>
 
     <div class="changes-grid">
       <div class="change-item">
@@ -622,14 +622,14 @@ function drawMainChart() {
   const chartH = H - PAD.top - PAD.bottom;
 
   const metrics = [
-    { label: 'Composite',     baseline: 13.8, v1: 22.1, v2: 27.0 },
-    { label: 'True Positive', baseline:  0.0, v1: 13.4, v2: 20.0 },
-    { label: 'Miss. Coverage',baseline:  0.0, v1: 12.5, v2: 32.0 },
-    { label: 'Perspective',   baseline:  0.0, v1: 12.5, v2: 27.0 },
-    { label: 'Evidence Rate', baseline:  0.0, v1:  0.0, v2: 32.0 },
+    { label: 'Composite',     baseline: 15.1, v1: 22.1, v2: 58.6 },
+    { label: 'True Positive', baseline: 12.1, v1: 13.4, v2: 51.8 },
+    { label: 'Miss. Coverage',baseline:  6.3, v1: 12.5, v2: 62.5 },
+    { label: 'Perspective',   baseline:  6.3, v1: 12.5, v2: 39.6 },
+    { label: 'Evidence Rate', baseline:  0.0, v1:  0.0, v2: 55.6 },
   ];
 
-  const maxVal = 55;
+  const maxVal = 75;
   const groups = metrics.length;
   const barGroups = 3;
   const groupPad = 18;
@@ -643,7 +643,7 @@ function drawMainChart() {
   ctx.fillStyle = COLORS.muted;
   ctx.font = '11px Inter, sans-serif';
   ctx.textAlign = 'right';
-  const ticks = [0,10,20,30,40,50];
+  const ticks = [0,10,20,30,40,50,60,70];
   ticks.forEach(t => {
     const y = PAD.top + chartH - (t / maxVal) * chartH;
     ctx.beginPath();
@@ -680,7 +680,7 @@ function drawMainChart() {
         ctx.fillStyle = COLORS.text;
         ctx.font = '10px Inter, sans-serif';
         ctx.textAlign = 'center';
-        const label = bi === 2 ? '~' + s.val + '%' : s.val + '%';
+        const label = s.val + '%';
         ctx.fillText(label, bx + barW/2, by - 4);
       }
     });
@@ -696,8 +696,8 @@ function drawMainChart() {
   const legendY = H - PAD.bottom + 38;
   const legendItems = [
     { label: 'Baseline', color: COLORS.baseline },
-    { label: 'v1',       color: COLORS.v1 },
-    { label: 'v2 (target)', color: COLORS.v2 },
+    { label: 'v1 (sonnet)',  color: COLORS.v1 },
+    { label: 'v2 (opus)',    color: COLORS.v2 },
   ];
   const legendTotalW = legendItems.reduce((a, it) => a + ctx.measureText(it.label).width + 36, 0);
   let lx = (W - legendTotalW) / 2;
@@ -730,11 +730,11 @@ function drawFPRChart() {
   const chartH = H - PAD.top - PAD.bottom;
 
   const data = [
-    { label: 'Baseline',        val: 0.0,  color: COLORS.baseline, note: '0%' },
-    { label: 'v1',              val: 40.5, color: COLORS.fprV1,    note: '40.5%' },
-    { label: 'v2 target',       val: 22.0, color: COLORS.fprV2,    note: '<25%' },
+    { label: 'Baseline',        val: 53.1, color: COLORS.baseline, note: '53.1%' },
+    { label: 'v1 (sonnet)',     val: 40.5, color: COLORS.fprV1,    note: '40.5%' },
+    { label: 'v2 (opus)',       val: 78.7, color: COLORS.fprV2,    note: '78.7%' },
   ];
-  const maxVal = 60;
+  const maxVal = 100;
 
   // Grid
   ctx.strokeStyle = COLORS.grid;
