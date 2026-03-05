@@ -1,0 +1,55 @@
+{
+  "fixture": "plan-auth-migration",
+  "seeded_flaws": [
+    {
+      "id": "SF-1",
+      "description": "Missing rollback for active sessions — Step 6 rollback only disables JWT path via feature flag, but says nothing about what happens to users who already have JWT tokens and no session cookie. These users lose auth entirely on rollback.",
+      "target_technique": "T1",
+      "expected_severity": "CRITICAL",
+      "expected_section": "Critical Findings",
+      "location": "Step 6 (Gradual Rollout)",
+      "detection_hint": "Day-1 pre-mortem should surface: 'What happens to users who converted to JWT if we need to roll back?'"
+    },
+    {
+      "id": "SF-2",
+      "description": "No day-1 failure handling for token refresh — Step 2 defines 15-minute access tokens and 7-day refresh tokens, but the plan never describes what happens when the refresh endpoint fails or is unavailable. Users with expired access tokens and a down refresh service are locked out.",
+      "target_technique": "T1",
+      "expected_severity": "MAJOR",
+      "expected_section": "Major Findings",
+      "location": "Step 2 (Auth Service Implementation)",
+      "detection_hint": "Day-1 pre-mortem: 'Crystal ball shows the refresh endpoint goes down 2 hours after launch'"
+    },
+    {
+      "id": "SF-3",
+      "description": "6-month scaling gap — The motivation is scaling to 50,000 DAU, but the plan never sizes the new JWT auth service for that load. Token validation is stateless (good), but refresh token storage in 'its own database' (Step 2) is a new stateful bottleneck that could hit the same scaling wall as Redis sessions.",
+      "target_technique": "T1",
+      "expected_severity": "MAJOR",
+      "expected_section": "Major Findings",
+      "location": "Step 2 + Background",
+      "detection_hint": "6-month pre-mortem: 'The refresh token database becomes the new Redis — same bottleneck, different name'"
+    },
+    {
+      "id": "SF-4",
+      "description": "Causal chain break between Step 4 and Step 5 — Step 4 (gateway) produces a 'unified internal auth context object' from either auth method. Step 5 (client SDK migration) then has clients 'exchange existing sessions for JWT tokens.' But the plan never explains how a client knows it should exchange — the gateway silently handles both, so clients have no signal to migrate. The lazy migration trigger mechanism is undefined.",
+      "target_technique": "T5",
+      "expected_severity": "MAJOR",
+      "expected_section": "Major Findings",
+      "location": "Between Step 4 and Step 5",
+      "detection_hint": "Backcasting from Step 5: 'For clients to exchange sessions for JWTs, what must Step 4 have produced?' Answer: a migration signal/prompt, which Step 4 does not produce."
+    }
+  ],
+  "expected_verdict_range": ["REVISE", "REJECT"],
+  "expected_techniques_activated": ["T1", "T5"],
+  "false_positive_traps": [
+    {
+      "description": "Section 3 (Monitoring and Observability Setup) is genuinely solid — Datadog dashboards, PagerDuty alerts with specific thresholds, structured logging with correlation IDs. This is a well-designed monitoring plan.",
+      "trap_for": "T6",
+      "expected_outcome": "No spurious findings generated for this section. T6 should examine it and conclude it is sound."
+    },
+    {
+      "description": "The RS256 decision in Step 1 is well-justified — asymmetric signing for microservice token verification is a legitimate security architecture choice.",
+      "trap_for": "T2",
+      "expected_outcome": "Socratic why-chain should terminate in a supported axiom (asymmetric crypto best practice), not flag this as a flaw."
+    }
+  ]
+}

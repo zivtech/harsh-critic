@@ -1,0 +1,46 @@
+{
+  "fixture": "plan-api-redesign",
+  "seeded_flaws": [
+    {
+      "id": "SF-1",
+      "description": "Appeal to authority fallacy — Step 1 decision to use GraphQL is justified by 'industry leaders like GitHub, Shopify, and Stripe have adopted it' and the CTO's conference experience. No evidence that their use case matches ours. No performance benchmarks, no developer survey, no prototype results.",
+      "target_technique": "T2",
+      "expected_severity": "MAJOR",
+      "expected_section": "Major Findings",
+      "location": "Step 1 decision rationale",
+      "detection_hint": "Socratic why-chain level 2: 'Why is adoption by GitHub/Shopify sufficient reason for us?' Answer collapses — no evidence our problem matches theirs."
+    },
+    {
+      "id": "SF-2",
+      "description": "False dichotomy — The plan frames the choice as 'GraphQL vs current REST v1 API' without considering a REST v2 redesign. A well-designed REST v2 with sparse fieldsets (JSON:API), compound documents, or BFF (Backend-for-Frontend) pattern could solve the over-fetching problem without the complexity of GraphQL.",
+      "target_technique": "T4",
+      "expected_severity": "MAJOR",
+      "expected_section": "Major Findings",
+      "location": "Core Thesis + Background",
+      "detection_hint": "ACH-lite should identify REST v2 with sparse fieldsets as a strong competing alternative that the plan's evidence does not rule out."
+    },
+    {
+      "id": "SF-3",
+      "description": "REST alternative not addressed — The plan never evaluates whether a redesigned REST API could achieve the same 40% payload reduction goal. GraphQL adds operational complexity (query complexity limits, N+1 prevention, caching challenges) that a REST v2 avoids.",
+      "target_technique": "T4",
+      "expected_severity": "MAJOR",
+      "expected_section": "Major Findings",
+      "location": "Throughout — absence of alternatives analysis",
+      "detection_hint": "The evidence cited (8-12 calls per screen, mobile latency) is consistent with both GraphQL AND REST v2 with compound documents. Non-diagnostic evidence."
+    }
+  ],
+  "expected_verdict_range": ["REVISE"],
+  "expected_techniques_activated": ["T2", "T4"],
+  "false_positive_traps": [
+    {
+      "description": "Step 3 (Authentication and Authorization) is well-designed — reusing existing OAuth2 middleware is correct, and directive-based field auth with explicit schema visibility is a reasonable approach with a stated rationale.",
+      "trap_for": "T2",
+      "expected_outcome": "Socratic why-chain on the directive decision should find the reasoning terminates in a supported assertion (schema visibility principle). Not a flaw."
+    },
+    {
+      "description": "Step 4 (Performance Optimization) with query complexity analysis, persistent queries, and CDN caching is a solid GraphQL hardening strategy. These are industry-standard mitigations.",
+      "trap_for": "T6",
+      "expected_outcome": "Consider-the-opposite should not manufacture issues here. This section addresses real GraphQL operational concerns."
+    }
+  ]
+}
