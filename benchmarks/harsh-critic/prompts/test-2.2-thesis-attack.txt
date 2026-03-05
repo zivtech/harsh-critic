@@ -1,0 +1,19 @@
+You are applying TWO critical review techniques together to a plan. Apply them in sequence, then synthesize.
+
+TECHNIQUE 1 — Murder Board (Step 8):
+Step back and attack the plan's core thesis. The murder board doesn't poke holes in individual steps — it tries to kill the entire proposal on its merits.
+
+Construct a complete 2-3 sentence argument for why this plan should be rejected outright. If you can build a compelling case, the plan has a structural problem. If you genuinely cannot construct a killing argument, note that — it's a signal of strength.
+
+Focus exclusively on the core thesis of the plan. Do not enumerate step-level issues. Do not produce a bulleted list of concerns. Your output should be a single, unified argument that targets whether the plan's fundamental premise holds up.
+
+TECHNIQUE 2 — Competing Alternatives (ACH-lite) (Step 9):
+Identify 1-2 strongest alternative approaches that could solve the same problem (real-time customer analytics with ≤5s latency replacing a nightly batch). These must be credible, not strawmen.
+
+For each alternative, ask: "Does the plan's evidence and reasoning actually rule out this alternative?" Evidence that is consistent with all approaches is non-diagnostic — it cannot justify the plan's chosen approach over the alternative.
+
+SYNTHESIS:
+After generating both outputs, evaluate whether they reinforce each other. If the murder board says "the plan fails because of X" and the alternatives show "alternative Y avoids X," that is a coherent, mutually reinforcing critique. If they contradict or ignore each other, note that as a weakness in the analysis.
+
+PLAN TO REVIEW:
+[Contents of benchmarks/harsh-critic/fixtures/plan-data-pipeline.md]

@@ -1,0 +1,22 @@
+You are running Test 2.4 from the harsh-critic testing plan: Decision Interrogation (G4: T2 + T4).
+
+Read the fixture: /home/user/harsh-critic/benchmarks/harsh-critic/fixtures/plan-api-redesign.md
+
+Apply these TWO techniques together (Steps 7 and 9 of the investigation protocol). Skip all other steps.
+
+**Step 7 — Socratic Deconstruction (T2):**
+For each major decision in the plan, run a 3-level why-chain. Scan for logical fallacies (false dichotomy, appeal to authority, begging the question, survivorship bias).
+
+**Step 9 — Competing Alternatives (ACH-lite) (T4):**
+Identify 1-2 strongest alternative approaches. Ask: "Does the plan's evidence actually rule out these alternatives?" Non-diagnostic evidence (consistent with all approaches) doesn't support the chosen plan.
+
+After generating both technique outputs, evaluate against these success criteria:
+- [ ] Socratic why-chains and alternative comparison address the same decisions but from different angles
+- [ ] If a why-chain reveals an unsupported assertion AND competing alternatives shows a viable alternative at that decision point, these are connected in the output
+- [ ] Neither technique simply repeats the other's findings in different words
+- [ ] Combined output provides a stronger case than either alone for the seeded GraphQL decision flaw (appeal to authority + REST v2 alternative not considered)
+
+Save the full output to /home/user/harsh-critic/benchmarks/harsh-critic/results/test-2.4-decision-interrogation.md
+Save the prompt to /home/user/harsh-critic/benchmarks/harsh-critic/prompts/test-2.4-decision-interrogation.txt
+
+Write the evaluation checklist at the end. Mark each criterion PASS or FAIL.
