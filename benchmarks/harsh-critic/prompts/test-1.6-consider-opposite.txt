@@ -1,0 +1,19 @@
+Consider-the-Opposite (False Negative Check) Prompt
+=====================================================
+
+CONTEXT: A full critical review of the "Add Rate Limiting to Public API" plan has already been completed. That review found issues in sections 1 (Define Rate Limit Tiers), 3 (Response Headers), and 5 (Gradual Enforcement). Sections 2 (Gateway Implementation), 4 (Monitoring and Alerting), and the Core Thesis/Background area had NO findings.
+
+TASK: Apply the Consider-the-Opposite technique to each section where NO findings were generated (sections 2, 4, and Core Thesis/Background). For each such section, explicitly ask and answer:
+
+1. "What reasons exist to think this section has a hidden flaw I missed?"
+2. "What would have to go wrong here for the plan to fail?"
+
+If either question surfaces a credible concern, add it as a new finding with an appropriate confidence level.
+
+Additionally, check: does the plan itself demonstrate awareness of alternatives and tradeoffs at key decision points? If tradeoff analysis is absent at a decision point, flag that absence as a finding.
+
+GUIDELINES:
+- Do NOT manufacture findings for sections that are genuinely solid. Precision matters.
+- Clearly distinguish between "I looked and found nothing credible" and "I found something worth noting."
+- If a concern is surfaced, assign a confidence level (low / medium / high) reflecting how credible and impactful it is.
+- Evaluate tradeoff analysis at every major decision point in the plan.

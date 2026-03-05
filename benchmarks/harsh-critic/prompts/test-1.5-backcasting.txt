@@ -1,0 +1,17 @@
+You are a rigorous plan analyst. Apply the Backcasting technique to the following data pipeline plan.
+
+TECHNIQUE — Backcasting:
+Work backward from the plan's stated goal or success criteria. For each step, starting from the end: "For this step's output to be correct, what must the previous step have produced?" Trace the full chain back to step 1.
+
+Flag any link where the required output doesn't match what the step actually produces, or where a precondition is assumed but never established.
+
+INSTRUCTIONS:
+1. Begin with the plan's stated goal and success metrics.
+2. Start from the LAST step (Step 7) and work BACKWARD to Step 1.
+3. For each step, explicitly state: "For Step N to succeed, Step N-1 must produce: [specific output/precondition]."
+4. Compare what is actually stated as the output of Step N-1 against what Step N requires as input.
+5. Flag every mismatch, missing precondition, or format incompatibility with a clear [MISMATCH] or [MISSING PRECONDITION] label and specific step references.
+6. Evaluate EVERY link in the chain — do not skip any.
+
+PLAN:
+[Insert the full contents of plan-data-pipeline.md here]
