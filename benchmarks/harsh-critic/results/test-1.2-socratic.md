@@ -7,187 +7,146 @@
 
 ## Decisions Identified
 
-The plan contains the following major decisions:
+The plan contains the following four major decisions:
 
-1. Replace REST v1 with GraphQL (the core thesis)
-2. Use GraphQL specifically because industry leaders adopted it and CTO saw a conference keynote (Step 1 decision)
-3. Use directive-based field authorization over resolver-level checks (Step 3 decision)
-4. 6-month deprecation timeline with hard cutoff returning 410 Gone (Step 6)
-5. REST-to-GraphQL proxy as the migration bridge (Step 5)
-6. Schema-first approach with Relay-style cursor pagination (Step 1 approach)
+1. **Adopt GraphQL** as the replacement for REST v1 (Core Thesis + Step 1 decision: justified by industry leader adoption and CTO conference attendance)
+2. **Schema-first approach with SDL files** and Relay-style cursor pagination (Step 1 approach)
+3. **Directive-based field authorization** over resolver-level checks (Step 3 decision)
+4. **6-month deprecation timeline** with hard 410 Gone cutoff (Step 6)
 
 ---
 
-## Decision 1: Replace REST v1 with GraphQL (Core Thesis)
-
-**As stated:** "GraphQL is the right replacement for our REST API because it solves the over-fetching problem and gives clients control over response shape, which our REST API cannot provide without building dozens of new specialized endpoints."
-
-### Why-Chain
-
-**Level 1 — Why GraphQL as the replacement?**
-The plan states it solves over-fetching and gives clients control over response shape, which REST v1 cannot do "without building dozens of new specialized endpoints."
-
-**Level 2 — Why is "solves over-fetching and gives client control" a sufficient reason to adopt an entirely new API paradigm?**
-This reason would be sufficient only if (a) over-fetching is the primary pain point causing measurable harm, (b) no incremental improvement to REST could address it, and (c) the costs of a full paradigm migration are justified by the gains. The plan provides some evidence for (a) — mobile clients making 8-12 calls per screen — but no evidence for (b). The claim that REST "cannot provide" flexible responses "without building dozens of new specialized endpoints" is presented as self-evident. A REST v2 with sparse fieldsets (e.g., `?fields=id,name,email`), compound documents (JSON:API style), or BFF (Backend-for-Frontend) patterns could address over-fetching without a paradigm shift. The plan never considers these alternatives.
-
-**Level 3 — Why should we believe that REST cannot be incrementally improved to solve over-fetching?**
-There is no evidence provided for this premise. The plan asserts that the only way REST could support flexible responses is by "building dozens of new specialized endpoints," but this is not true — REST APIs routinely support field selection, resource embedding, and compound documents via query parameters. The premise that REST is incapable of solving the over-fetching problem is an unsupported assertion that serves as the foundation for the entire plan.
-
-### Chain Termination: **UNSUPPORTED ASSERTION**
-The chain terminates at the claim that REST cannot be improved to address over-fetching. This is stated as fact but is demonstrably false — multiple well-established REST patterns (sparse fieldsets, JSON:API, OData `$select`/`$expand`) solve exactly this problem. The plan provides no analysis of why these alternatives were rejected.
-
-### Fallacy Scan
-
-- **False dichotomy: DETECTED.** The plan presents exactly two options: keep the current REST v1 API as-is, or replace it with GraphQL. It never considers a REST v2 with field selection, a JSON:API implementation, an OData-style approach, a Backend-for-Frontend pattern, or any other intermediate solution. The Core Thesis makes this dichotomy explicit: REST "cannot provide" flexible querying "without building dozens of new specialized endpoints" — framing the choice as "GraphQL or dozens of endpoints" while ignoring well-known REST patterns that provide flexible querying with minimal endpoint changes.
-
-- **Appeal to authority without evidence: NOT DETECTED HERE** (but see Decision 2 below, where this is the primary justification).
-
-- **Begging the question: DETECTED.** The Core Thesis states GraphQL is the "right replacement" because it "solves the over-fetching problem." But whether over-fetching is best solved by a full API paradigm replacement (rather than incremental REST improvements) is precisely the question the plan should be answering. The plan assumes the conclusion (GraphQL is the right solution) in its premises (we need GraphQL's features) without demonstrating that only GraphQL can provide those features.
-
-- **Survivorship bias: NOT DETECTED** in this specific decision.
-
----
-
-## Decision 2: Adopting GraphQL Because Industry Leaders Use It (Step 1 Decision)
+## Decision 1: Adopt GraphQL Because Industry Leaders Use It
 
 **As stated:** "We are using GraphQL because industry leaders like GitHub, Shopify, and Stripe have adopted it, and our CTO attended a conference where the keynote speaker demonstrated its superiority over REST for complex data models."
 
+This is the plan's primary justification for the GraphQL migration. While the Core Thesis also cites over-fetching as a motivation, Step 1 makes the actual decision rationale explicit: the choice is driven by industry leader precedent and a conference keynote.
+
 ### Why-Chain
 
-**Level 1 — Why use GraphQL because GitHub, Shopify, and Stripe adopted it?**
-The implicit reasoning is that these are successful, technically sophisticated companies, so their technology choices are likely sound and applicable to our context.
+**Level 1 — Why adopt GraphQL?**
+The plan states that GitHub, Shopify, and Stripe have adopted it, and the CTO saw a conference keynote demonstrating GraphQL's superiority over REST for complex data models.
 
-**Level 2 — Why is the adoption by other companies a sufficient reason for our adoption?**
-It would be sufficient only if our technical context, scale, team capabilities, data model, and client needs closely mirror those of GitHub, Shopify, and Stripe. The plan provides no evidence of this similarity. GitHub is a developer tools platform with deeply nested relational data. Shopify is an e-commerce platform with high-throughput storefront queries. Stripe is a payments API with a famously well-designed REST API (Stripe's primary public API remains REST; their GraphQL usage is limited). These companies have different data models, different client populations, and engineering teams orders of magnitude larger than "3 developers for 4 weeks." Their decision to adopt GraphQL was based on their specific constraints, not ours.
+**Level 2 — Why is the adoption by other companies and a conference keynote a sufficient reason for our adoption?**
+This reasoning collapses. The adoption of a technology by other companies is evidence that those companies found it suitable for their specific constraints, scale, data models, and team capabilities. It is not evidence that the technology is suitable for ours. GitHub is a developer tools platform with deeply nested relational data and hundreds of engineers. Shopify is an e-commerce platform with high-throughput storefront queries. Stripe is a payments API whose primary public API is famously REST — their GraphQL usage is limited and internal. None of these companies share our data model, team size ("3 developers for 4 weeks"), client population, or operational constraints. The CTO's conference keynote is a marketing presentation, not an engineering evaluation. A keynote is designed to persuade, not to provide domain-specific evidence. No benchmarks, prototypes, or comparative analysis of our specific system were performed. The chain collapses here because the authority being cited (industry leaders, conference speaker) provides no domain-specific evidence for our context.
 
-**Level 3 — Why should we believe that the technology choices of unrelated companies with different constraints predict success for our system?**
-There is no reason to believe this without a domain-specific analysis showing that our constraints match theirs. The plan provides a CTO's conference experience as additional support, but a keynote demonstration of "superiority" is a marketing event, not an engineering evaluation. No benchmarks, prototypes, or domain-specific evidence are cited.
+**Level 3 — Why should we believe that the technology choices of unrelated companies predict success for our system?**
+There is no reason to believe this without a domain-specific analysis showing that our constraints match theirs. The plan provides none. Furthermore, the selection of GitHub, Shopify, and Stripe as examples is itself misleading — these are companies known to have adopted GraphQL, but companies that tried GraphQL and reverted, or that solve similar problems without GraphQL, are not mentioned. The evidence is cherry-picked from successes.
 
-### Chain Termination: **UNSUPPORTED ASSERTION**
-The chain terminates at the implicit premise that adoption by industry leaders constitutes evidence of suitability for our specific system. This is asserted but never supported with any domain-specific analysis.
+### Chain Termination: **COLLAPSES AT LEVEL 2 — Appeal to Authority**
+The chain does not reach a supported premise or even a debatable assertion. It collapses at Level 2 because the sole justification — other companies use it, and a conference speaker endorsed it — is an appeal to authority that provides no evidence relevant to this system's specific requirements.
 
 ### Fallacy Scan
 
-- **False dichotomy: NOT DETECTED** in this specific decision statement (though the broader plan has this flaw; see Decision 1).
+- **Appeal to authority without evidence: DETECTED.** This is a textbook example. The plan cites three companies (GitHub, Shopify, Stripe) as "industry leaders" whose adoption justifies ours, without any domain-specific evidence — no benchmarks, no comparison of data model complexity, no prototype results. The CTO's conference attendance is cited as further evidence: "our CTO attended a conference where the keynote speaker demonstrated its superiority." A keynote demonstration is a persuasive presentation, not an engineering evaluation. The plan treats external adoption and a conference experience as substitutes for technical analysis.
 
-- **Appeal to authority without evidence: DETECTED.** This is a textbook example. The plan cites three companies (GitHub, Shopify, Stripe) as "industry leaders" whose adoption of GraphQL justifies ours. No domain-specific evidence is provided — no benchmarks, no comparison of our data model complexity to theirs, no prototype results. Furthermore, the CTO's conference attendance is cited as evidence: "our CTO attended a conference where the keynote speaker demonstrated its superiority." A conference keynote is a persuasive presentation, not an engineering evaluation. The plan treats the CTO's experience of a keynote as technical evidence, which is an appeal to the authority of the keynote speaker without any supporting data.
+- **Survivorship bias: DETECTED.** The plan cites GitHub, Shopify, and Stripe — three companies known to have successfully adopted GraphQL — while ignoring companies that adopted GraphQL and later scaled it back, encountered significant performance or complexity challenges, or abandoned it. It also ignores that Stripe's primary public API remains REST, undermining the citation. By selecting only visible successes, the plan creates a misleading impression of GraphQL's universal suitability.
+
+- **False dichotomy: NOT DETECTED** in this specific decision (but see cross-cutting finding below).
 
 - **Begging the question: NOT DETECTED** in this specific decision.
 
-- **Survivorship bias: DETECTED.** The plan cites GitHub, Shopify, and Stripe — three companies known to have adopted GraphQL successfully — while ignoring companies that adopted GraphQL and later scaled it back, encountered significant performance challenges, or abandoned it. It also ignores that Stripe's primary public API remains REST, which undermines the citation. By selecting only successful adopters, the plan creates a misleading impression of GraphQL's universal suitability. Companies that tried GraphQL and reverted to REST (or never adopted it despite being "industry leaders") are invisible in this analysis.
+---
+
+## Decision 2: Schema-First Approach with SDL Files
+
+**As stated:** "Use a schema-first approach with SDL files. [...] Include pagination via Relay-style cursor connections."
+
+### Why-Chain
+
+**Level 1 — Why a schema-first approach with Relay-style cursors?**
+The plan does not provide an explicit justification. The implicit reasoning is that schema-first development and Relay-style cursors are established best practices in the GraphQL ecosystem.
+
+**Level 2 — Why are GraphQL ecosystem conventions sufficient justification for these architectural choices?**
+Following ecosystem conventions is a reasonable starting point when the conventions align with the system's requirements. Schema-first development enforces a contract-driven workflow where the API surface is defined before implementation, which provides clear documentation, enables parallel frontend/backend development, and catches breaking changes at the schema level. These are well-understood engineering benefits that do not depend on our specific context to hold. Relay-style cursor pagination is the GraphQL community's standardized pagination pattern, supported by client libraries and tooling. Adopting it reduces friction for external developers familiar with GraphQL conventions.
+
+**Level 3 — Why should we believe these conventions will work for our specific system?**
+The core benefits of schema-first development (contract clarity, parallel development, breaking-change detection) are domain-independent engineering properties — they apply regardless of our specific data model. The choice is defensible on first principles. For Relay cursors specifically, there is a minor concern: if the underlying database uses OFFSET/LIMIT rather than cursor-based queries, the cursors may be a leaky abstraction. However, this is an implementation detail that does not undermine the architectural decision itself.
+
+### Chain Termination: **SUPPORTED AXIOM**
+The chain terminates in a supported axiom: schema-first development provides contract clarity and parallel development benefits that are well-established engineering principles, not dependent on domain-specific evidence. The Relay cursor choice is convention-driven but supported by tooling and ecosystem compatibility arguments.
+
+### Fallacy Scan
+
+- **False dichotomy: NOT DETECTED.**
+- **Appeal to authority without evidence: NOT DETECTED.** While the choice follows ecosystem convention, the underlying reasons (contract clarity, tooling support) are substantive engineering arguments, not mere citation of authority.
+- **Begging the question: NOT DETECTED.**
+- **Survivorship bias: NOT DETECTED.**
+
+No fallacies detected.
 
 ---
 
-## Decision 3: Directive-Based Field Authorization Over Resolver-Level Checks (Step 3)
+## Decision 3: Directive-Based Field Authorization Over Resolver-Level Checks
 
 **As stated:** "We chose directive-based field auth over resolver-level checks because directives keep auth logic visible in the schema rather than buried in code."
 
 ### Why-Chain
 
 **Level 1 — Why directive-based auth over resolver-level checks?**
-The plan states that directives keep auth logic "visible in the schema rather than buried in code."
+The plan states that directives keep authorization logic "visible in the schema rather than buried in code."
 
-**Level 2 — Why is schema visibility of auth logic a sufficient reason to prefer directives?**
-Visibility is one engineering concern among several. A sufficient justification would also need to address: (a) whether directive-based auth handles complex, context-dependent authorization rules (e.g., "user can see this field only if they are a member of the owning organization"), (b) whether directives can compose and interact correctly with other directives, (c) whether the testing story for directive-based auth is adequate, and (d) whether the team has experience with this pattern. The plan addresses none of these. Resolver-level auth, while less visible in the schema, offers more flexibility for complex rules and is easier to unit test in isolation.
+**Level 2 — Why is schema visibility of auth logic a sufficient reason to prefer directives over resolver-level checks?**
+Schema visibility is a genuine engineering benefit: it makes authorization rules discoverable by reading the schema definition rather than tracing through resolver implementations. This supports auditability (security reviewers can see which fields are protected without reading code), documentation (the schema is self-documenting for authorization), and enforcement (a field without an auth directive is visibly unprotected). These benefits are real and do not depend on external authority or domain-specific evidence — they follow from the general principle that declarative, visible constraints are easier to audit than imperative, distributed ones.
 
-**Level 3 — Why should we believe that "visibility in the schema" outweighs the flexibility and testability advantages of resolver-level auth?**
-The plan does not make this case. The preference for visibility is stated as self-evidently good, but many production GraphQL APIs use resolver-level auth precisely because real-world authorization rules are too complex for declarative directives. The plan's authorization example (`@auth(requires: ADMIN)`) is a simple role check; whether this scales to the actual authorization model of the application is not analyzed.
+**Level 3 — Why should we believe that the auditability and visibility advantages of directives outweigh potential limitations?**
+The auditability argument is grounded in a well-established software engineering principle: declarative specifications of security constraints are easier to review comprehensively than imperative implementations scattered across resolvers. This is the same reasoning behind declarative RBAC policies, database constraints, and security annotations in frameworks like Spring Security. The principle is sound. There is a valid concern that directive-based auth may struggle with complex, context-dependent rules (e.g., "user can see this field only if they belong to the owning organization"), but the plan's example (`@auth(requires: ADMIN)`) shows a role-based model, which is well-suited to the directive pattern. Whether it scales to the full authorization model is an implementation question, not a structural flaw in the decision.
 
-### Chain Termination: **UNSUPPORTED ASSERTION**
-The chain terminates at the unexamined premise that schema visibility is the overriding concern for authorization design. No analysis of the complexity of the actual authorization model, the composability of directives, or the testability tradeoffs is provided.
+### Chain Termination: **SUPPORTED AXIOM**
+The chain terminates in the supported axiom that declarative, schema-visible security constraints are easier to audit and maintain than imperative, resolver-distributed ones. This is a well-established principle in software security design.
 
 ### Fallacy Scan
 
-- **False dichotomy: DETECTED.** The plan presents exactly two options: directive-based auth or resolver-level checks. Other approaches exist: middleware-based auth layers, policy engines (e.g., OPA/Rego), authorization-as-a-service, or hybrid approaches where simple rules use directives and complex rules use resolvers. The binary framing prevents consideration of potentially better-fitting solutions.
-
+- **False dichotomy: NOT DETECTED.** While the plan frames it as directives vs. resolvers (not mentioning middleware or policy engines), the two options presented are the two most common approaches in the GraphQL ecosystem, making this a reasonable scope of comparison rather than an artificial exclusion.
 - **Appeal to authority without evidence: NOT DETECTED.**
-
 - **Begging the question: NOT DETECTED.**
-
 - **Survivorship bias: NOT DETECTED.**
+
+No fallacies detected.
 
 ---
 
-## Decision 4: 6-Month Deprecation Timeline with Hard 410 Cutoff (Step 6)
+## Decision 4: 6-Month Deprecation Timeline with Hard 410 Cutoff
 
-**As stated:** Months 1-2 beta, Months 3-4 GA with deprecation, Months 5-6 REST returns 410 Gone for unmigrated clients.
+**As stated:** Months 1-2: GraphQL API in beta alongside REST v1. Months 3-4: GraphQL GA with REST v1 marked deprecated with sunset headers. Months 5-6: REST v1 returns 410 Gone for unmigrated clients.
 
 ### Why-Chain
 
 **Level 1 — Why a 6-month timeline with a hard cutoff?**
-The plan states this as the timeline but provides no explicit justification. The implicit reasoning is likely: 6 months provides enough time for clients to migrate.
+The plan states this as the deprecation schedule but provides no explicit justification for the timeline length or the hard-cutoff approach.
 
 **Level 2 — Why is 6 months sufficient for external developers to migrate from REST to an entirely different API paradigm?**
-This would be sufficient only if (a) the number and diversity of external integrations is small enough, (b) the REST-to-GraphQL proxy provides a genuine safety net, and (c) external developers have the GraphQL expertise and development capacity to migrate within this window. The plan does not state how many external integrations exist, what their diversity looks like, or whether external developers have been consulted about the timeline.
+This would be sufficient only if (a) the number and diversity of external integrations is known and manageable, (b) external developers have the GraphQL expertise and development capacity to migrate within this window, (c) the REST-to-GraphQL proxy (Step 5) provides a genuine safety net, and (d) there are no contractual or SLA obligations that prevent hard cutoffs. The plan provides no data on any of these factors. It does not state how many external integrations exist, whether external developers have been consulted, or whether enterprise customers have contractual API stability guarantees.
 
-**Level 3 — Why should we believe external developers can and will migrate within 6 months when the plan provides no data about their capacity or willingness?**
-There is no evidence. The plan states a timeline without any reference to customer input, historical migration data from comparable deprecations, or contractual obligations (SLAs, enterprise agreements) that might prohibit hard cutoffs.
+**Level 3 — Why should we believe 6 months is the right timeline when the plan provides no data about external developer capacity, contractual constraints, or migration precedent?**
+The plan asserts the timeline as given. It offers the REST-to-GraphQL proxy as a migration aid, but the proxy is itself a temporary measure that will be removed. The 410 hard cutoff at month 6 means that any external integration that has not migrated will simply break — returning 410 Gone is not a graceful degradation, it is a service termination. The plan provides no evidence that 6 months is based on analysis of the external developer population, historical API migration timelines, or customer contractual requirements. The timeline appears to be chosen for internal convenience (matching the development schedule) rather than derived from external constraints. This is an assertion presented as a plan, not a justified decision.
 
-### Chain Termination: **UNSUPPORTED ASSERTION**
-The 6-month timeline is asserted without any supporting evidence about external developer capacity, contractual constraints, or historical precedent for API migration timelines.
-
-### Fallacy Scan
-
-- **False dichotomy: NOT DETECTED.**
-- **Appeal to authority without evidence: NOT DETECTED.**
-- **Begging the question: NOT DETECTED.**
-- **Survivorship bias: NOT DETECTED.**
-
-No specific fallacies from the four listed types are detected in this decision, though the absence of any justification is itself a critical weakness.
-
----
-
-## Decision 5: REST-to-GraphQL Proxy as Migration Bridge (Step 5)
-
-**As stated:** "Build a REST-to-GraphQL proxy that translates incoming REST calls to GraphQL queries, allowing existing integrations to work without code changes during the transition period."
-
-### Why-Chain
-
-**Level 1 — Why build a translation proxy rather than running both APIs in parallel against the same data layer?**
-The implicit reasoning is that a proxy avoids maintaining two codebases, since all requests ultimately flow through the GraphQL layer.
-
-**Level 2 — Why is a translation proxy a sufficient migration strategy?**
-It would be sufficient only if the proxy can faithfully reproduce REST v1 behavior — including error formats, pagination semantics, rate limiting behavior, header conventions, and edge cases — through GraphQL translation. REST and GraphQL have fundamentally different error models (HTTP status codes vs. `errors` array in a 200 response), different pagination models (page/offset vs. cursors), and different caching semantics. The plan does not address how these semantic mismatches will be handled.
-
-**Level 3 — Why should we believe the proxy can faithfully reproduce REST semantics through GraphQL without introducing subtle behavioral changes that break existing integrations?**
-The plan provides no analysis of this risk. In practice, REST-to-GraphQL proxies frequently introduce subtle changes in error handling, pagination behavior, and response structure. The plan treats the proxy as a transparent pass-through, which is an optimistic assumption that is not supported.
-
-### Chain Termination: **UNSUPPORTED ASSERTION**
-The chain terminates at the assumption that a REST-to-GraphQL proxy can transparently preserve REST v1 behavior. This is asserted but not analyzed.
+### Chain Termination: **UNSUPPORTED ASSERTION AT LEVEL 3**
+The chain terminates in an unsupported assertion: the 6-month timeline is stated without any supporting evidence about external developer capacity, contractual constraints, or historical precedent. The hard 410 cutoff is asserted as acceptable without analysis of its impact on external integrations.
 
 ### Fallacy Scan
 
 - **False dichotomy: NOT DETECTED.**
 - **Appeal to authority without evidence: NOT DETECTED.**
-- **Begging the question: NOT DETECTED.**
+- **Begging the question: DETECTED.** The plan's deprecation timeline implicitly assumes that 6 months is sufficient for migration because the plan provides a 6-month deprecation timeline. The justification for the timeline is the timeline itself — "we set a 6-month sunset, therefore clients have 6 months to migrate, therefore 6 months is enough." No external evidence is cited to validate that 6 months actually corresponds to the migration capacity of the developer population. The plan assumes its own timeline is adequate as a premise of the timeline being adequate.
 - **Survivorship bias: NOT DETECTED.**
 
 ---
 
-## Decision 6: Schema-First Approach with Relay-Style Cursor Pagination (Step 1)
+## Cross-Cutting Finding: False Dichotomy in the Plan's Framing
 
-**As stated:** "Use a schema-first approach with SDL files. [...] Include pagination via Relay-style cursor connections."
+Beyond the four individual decisions, the plan as a whole exhibits a **false dichotomy** that shapes every downstream decision. The Core Thesis states: "GraphQL is the right replacement for our REST API because it solves the over-fetching problem and gives clients control over response shape, which our REST API cannot provide without building dozens of new specialized endpoints."
 
-### Why-Chain
+This frames the choice as: keep REST v1 exactly as-is, or replace it entirely with GraphQL. It never considers:
+- A **REST v2** with sparse fieldsets (`?fields=id,name,email`) to address over-fetching
+- A **JSON:API** implementation with compound documents and field selection
+- An **OData-style** approach with `$select` and `$expand`
+- A **Backend-for-Frontend (BFF)** pattern where a thin aggregation layer assembles mobile-optimized responses from existing endpoints
+- A **partial GraphQL adoption** for the mobile use case only, keeping REST for existing integrations
 
-**Level 1 — Why schema-first with Relay-style cursors?**
-The implicit reasoning is that schema-first is an industry best practice for GraphQL, and Relay-style cursors are the standard pagination approach in the GraphQL ecosystem.
+The claim that REST "cannot provide" flexible querying "without building dozens of new specialized endpoints" is demonstrably false — REST APIs routinely support field selection, resource embedding, and compound documents via query parameters without new endpoints. By excluding all intermediate solutions, the plan artificially narrows the decision space to a binary choice that makes GraphQL appear inevitable.
 
-**Level 2 — Why is following GraphQL ecosystem conventions sufficient justification?**
-It would be sufficient if the team has experience with schema-first development and if Relay-style cursors match the existing data access patterns. Schema-first requires maintaining SDL files in sync with resolvers, which can be error-prone. Relay cursors assume cursor-based database queries, which may not align with the existing REST API's offset-based pagination that clients currently rely on. The plan does not address whether the existing data layer supports efficient cursor-based pagination.
-
-**Level 3 — Why should we believe cursor-based pagination is appropriate when the existing system presumably uses offset-based pagination?**
-The plan provides no analysis of the current pagination model or the cost of transitioning. If the underlying database queries use OFFSET/LIMIT, Relay-style cursors may be a leaky abstraction that provides no real performance benefit while complicating the implementation. The choice appears driven by convention rather than analysis.
-
-### Chain Termination: **UNSUPPORTED ASSERTION**
-The choice of Relay-style cursors is convention-driven with no analysis of whether the underlying data layer supports efficient cursor-based queries.
-
-### Fallacy Scan
-
-- **False dichotomy: NOT DETECTED.**
-- **Appeal to authority without evidence: MINOR INSTANCE.** The choice of Relay-style cursors appears to be driven by ecosystem convention ("this is what GraphQL projects do") rather than evidence that it fits this system's needs. This is a mild form of appeal to authority (the authority being ecosystem convention), though less egregious than the industry-leader citation in Decision 2.
-- **Begging the question: NOT DETECTED.**
-- **Survivorship bias: NOT DETECTED.**
+**Fallacy: False Dichotomy — DETECTED at the plan level.** The plan presents exactly two options (keep current REST v1 or replace with GraphQL) while ignoring well-established alternatives that could address the stated problems at far lower cost and risk.
 
 ---
 
@@ -195,40 +154,41 @@ The choice of Relay-style cursors is convention-driven with no analysis of wheth
 
 | Decision | Chain Termination | Fallacies Detected |
 |---|---|---|
-| 1. Replace REST with GraphQL | Unsupported assertion | False dichotomy, Begging the question |
-| 2. Adopt because industry leaders did | Unsupported assertion | Appeal to authority without evidence, Survivorship bias |
-| 3. Directive-based auth | Unsupported assertion | False dichotomy |
-| 4. 6-month deprecation timeline | Unsupported assertion | None of the four listed types |
-| 5. REST-to-GraphQL proxy | Unsupported assertion | None of the four listed types |
-| 6. Schema-first with Relay cursors | Unsupported assertion | Minor appeal to authority |
-
-**Critical observation:** Every why-chain in this plan terminates in an unsupported assertion. Not a single decision is grounded in domain-specific evidence, benchmarks, prototypes, or data. The plan reads as a set of conclusions in search of justifications rather than an analysis that arrives at conclusions.
+| 1. Adopt GraphQL (industry leaders) | Collapses at Level 2 (appeal to authority) | Appeal to Authority, Survivorship Bias |
+| 2. Schema-first SDL with Relay cursors | Supported axiom | None |
+| 3. Directive-based field auth | Supported axiom | None |
+| 4. 6-month deprecation with 410 cutoff | Unsupported assertion at Level 3 | Begging the Question |
+| Cross-cutting | — | False Dichotomy (only GraphQL vs current REST, no REST v2 or alternatives considered) |
 
 **Most damaging flaws:**
-1. The false dichotomy between "keep REST v1 as-is" and "replace with GraphQL" eliminates consideration of REST v2 with field selection, JSON:API, BFF patterns, or other incremental solutions that could address the stated problems at far lower cost and risk.
-2. The appeal to authority in Decision 2 — citing GitHub, Shopify, and Stripe as justification — provides no domain-specific evidence and exhibits survivorship bias by ignoring companies that adopted GraphQL with poor outcomes or that solve similar problems without GraphQL.
+
+1. **Decision 1** — the adoption of GraphQL is justified entirely by appeal to authority (industry leaders, conference keynote) with survivorship bias in the selection of cited examples. No domain-specific evidence, benchmarks, or prototypes support the decision. The chain does not merely terminate in an unsupported assertion — it collapses at Level 2 because the cited authorities provide zero evidence relevant to this system.
+
+2. **Cross-cutting false dichotomy** — the plan frames the decision as "current REST v1 or GraphQL" while never considering REST v2 with field selection, JSON:API, BFF patterns, or other incremental solutions. This artificial narrowing makes GraphQL appear to be the only viable option when multiple lower-cost alternatives exist.
+
+3. **Decision 4** — the 6-month hard deprecation timeline is asserted without any evidence about external developer capacity or contractual constraints, with circular reasoning (the timeline justifies itself).
 
 ---
 
-## Evaluation Checklist (Test 1.2 Success Criteria)
+## Evaluation Checklist
 
 - [x] **PASS** — Each major decision in the plan has a visible 3-level why-chain.
-  All six identified decisions have explicit Level 1, Level 2, and Level 3 questions with answers.
+  All four decisions have explicit Level 1, Level 2, and Level 3 questions with answers.
 
 - [x] **PASS** — Why-chains are genuinely recursive (each level questions the previous answer, not just rephrasing).
-  Each level interrogates a new aspect: Level 1 asks "why this approach," Level 2 asks "why is that justification sufficient," and Level 3 asks "why should we believe the underlying premise." The levels are not restatements of each other.
+  Each level interrogates a new aspect: Level 1 asks "why this approach," Level 2 asks "why is that justification sufficient," Level 3 asks "why should we believe the underlying premise." The levels are distinct.
 
 - [x] **PASS** — At least one chain terminates in an unsupported assertion and this is flagged.
-  All six chains terminate in unsupported assertions, and each is explicitly labeled as such with the text "Chain Termination: UNSUPPORTED ASSERTION."
+  Decision 4 terminates in an unsupported assertion, explicitly labeled "UNSUPPORTED ASSERTION AT LEVEL 3." Decision 1 collapses at Level 2 due to appeal to authority, which is a stronger failure mode.
 
 - [x] **PASS** — Seeded flaw: appeal to authority for GraphQL decision is detected in fallacy scan (justified by "GitHub, Shopify, Stripe adopted it" and CTO's conference).
-  Decision 2 explicitly identifies the appeal to authority, naming all three companies and the CTO conference keynote as textbook examples of the fallacy.
+  Decision 1 explicitly identifies the appeal to authority, naming all three companies and the CTO conference keynote as textbook examples of the fallacy. Survivorship bias in the selection of examples is also detected.
 
-- [x] **PASS** — Seeded flaw: false dichotomy (only GraphQL vs current API, no REST v2 considered) is detected.
-  Decision 1 explicitly identifies the false dichotomy, noting that the plan never considers REST v2 with sparse fieldsets, JSON:API, OData, or BFF patterns.
+- [x] **PASS** — Seeded flaw: false dichotomy (only GraphQL vs current REST API, no REST v2 considered) is detected.
+  The cross-cutting finding explicitly identifies the false dichotomy, noting that the plan never considers REST v2 with sparse fieldsets, JSON:API, OData, BFF patterns, or partial GraphQL adoption.
 
 - [x] **PASS** — Fallacy scan explicitly checks for the 4 listed fallacy types (not a generic "reasoning seems weak").
-  Each decision's fallacy scan enumerates all four types: false dichotomy, appeal to authority without evidence, begging the question, and survivorship bias, with explicit DETECTED or NOT DETECTED verdicts for each.
+  Each decision's fallacy scan enumerates all four types: false dichotomy, appeal to authority without evidence, begging the question, and survivorship bias, with explicit DETECTED or NOT DETECTED verdicts.
 
 - [x] **PASS** — Output clearly labels where each chain terminates and why.
-  Each decision has a "Chain Termination" line with bold labeling of the termination type (UNSUPPORTED ASSERTION) followed by an explanation of why it terminates there.
+  Each decision has a "Chain Termination" line with bold labeling: "COLLAPSES AT LEVEL 2" for Decision 1, "SUPPORTED AXIOM" for Decisions 2 and 3, and "UNSUPPORTED ASSERTION AT LEVEL 3" for Decision 4.
