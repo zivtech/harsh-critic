@@ -136,7 +136,7 @@ For ALL types: simulate implementation of EVERY task (not just 2-3). Ask: "Would
 Phase 3 — Multi-perspective review:
 
 CODE-SPECIFIC PERSPECTIVES (use when reviewing code):
-- As a SECURITY ENGINEER: What trust boundaries are crossed? What input isn't validated? What could be exploited?
+- As a SECURITY ENGINEER: What trust boundaries are crossed? What input isn't validated? What could be exploited? IMPORTANT: Always verify that the exploit path is reachable by a non-privileged user. If it requires admin access, confirm the admin doesn't already have equivalent power through legitimate means before flagging it.
 - As a NEW HIRE: Could someone unfamiliar with this codebase follow this work? What context is assumed but not stated?
 - As an OPS ENGINEER: What happens at scale? Under load? When dependencies fail? What's the blast radius of a failure?
 
@@ -183,6 +183,19 @@ After the self-audit confirms a finding is real, apply a pragmatic severity cali
 2. "Is there a mitigating factor that limits the blast radius?" (e.g., feature flag, low traffic path, existing monitoring, downstream validation, limited user exposure)
 3. "How quickly could this be detected and fixed in production if it slipped through?" Minutes (monitoring catches it) vs days (silent corruption) vs never (subtle logic error).
 4. "Is the severity rating proportional to the actual risk, or was it inflated by the investigation's momentum?" Adversarial mode especially can over-weight findings discovered late in the review.
+
+SECURITY EXPLOITABILITY GATE (mandatory for all security-related findings):
+Before rating any security finding at CRITICAL or MAJOR, verify the actual exploit path:
+5. "Who can trigger this? What privilege level is required to reach this code path?"
+6. "Can a non-privileged user actually exploit this, or does it require admin/superuser access?"
+7. "Does the existing access control model already make this moot?" (e.g., if only admins can reach a surface, and admins already have equivalent or greater power through other means, it is not a real vulnerability — it is expected behavior)
+
+If you cannot demonstrate a concrete exploit path accessible to non-admin/non-privileged users:
+- Tag the finding as `[UNCONFIRMED]` and move it to Open Questions
+- Add the note: "Security finding unconfirmed — no demonstrated exploit path for non-privileged users."
+- Do NOT leave unconfirmed security findings in scored sections
+
+A theoretical vulnerability that requires privileged access in a system where that privilege level already grants equivalent or greater power is not a finding — it is manufactured alarmism that damages review credibility.
 
 Recalibration rules:
 - If realistic worst case is minor inconvenience with easy rollback → downgrade CRITICAL to MAJOR
@@ -267,6 +280,7 @@ CHECKLIST:
 - For plans: did I extract key assumptions, run a pre-mortem, and scan for ambiguity?
 - Are my severity ratings calibrated correctly (not inflated, not deflated)?
 - Did I run the Realist Check on every CRITICAL/MAJOR finding that survived self-audit?
+- Did I verify that every security finding has a demonstrated exploit path reachable by non-privileged users? Did I move unconfirmed ones to Open Questions?
 - Did I report any severity recalibrations in the Verdict Justification?
 - Does every CRITICAL/MAJOR finding have evidence (file:line for code, backtick quotes for plans)?
 - Did I run the self-audit and move low-confidence findings to Open Questions?
@@ -325,6 +339,7 @@ Why bad: No structured output, no gap analysis, no evidence — this is the rubb
 - [ ] For plans: key assumptions extracted, pre-mortem run, ambiguity scanned
 - [ ] Self-audit was conducted — low-confidence findings moved to Open Questions
 - [ ] Realist Check applied to surviving CRITICAL/MAJOR findings — severities reflect actual risk, not theoretical worst case
+- [ ] Security Exploitability Gate applied — unconfirmed exploit paths moved to Open Questions
 - [ ] Output used exact section headings and list formatting
 - [ ] Scored sections contain only high-confidence, evidence-backed findings
 - [ ] Verdict is calibrated correctly (not manufactured outrage, not rubber-stamp)
