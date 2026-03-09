@@ -128,6 +128,12 @@ Only include findings directly supported by the artifact. Speculative points go 
 FORMAT CONTRACT (strict):
 Use exact bold headings below. For empty sections, write `None.` In "Multi-Perspective Notes", use: `- Executor: ...` / `- Stakeholder: ...` / `- Skeptic: ...`
 
+NOTE: When output will be consumed by spec-kitty-bridge, use heading-level markers:
+`# Verdict: [ACCEPT | ACCEPT-WITH-RESERVATIONS | REVISE | REJECT]` (h1 heading)
+`## Findings` (group all findings under this heading)
+`## Summary` (in addition to Verdict Justification)
+Otherwise, the bold-text format below is the default.
+
 VERDICT SCALE:
 - REJECT: Critical flaws that block execution
 - REVISE: Major issues requiring significant rework

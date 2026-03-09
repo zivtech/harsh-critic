@@ -535,6 +535,28 @@ export function useSearch() {
 | 🔍 3 | All tasks | Overall performance budget, error state coverage |
 
 [For Next.js: add RSC boundaries checkpoint]
+
+---
+
+### Contract Appendix (for spec-kitty-bridge WP translation)
+
+When output will be consumed by spec-kitty-bridge, append these standardized sections after the domain-specific output above:
+
+### Architecture Overview
+[Brief summary of component count, key architectural decisions from the plan above]
+
+### Implementation Tasks
+For each task already listed above, add:
+#### Task {N}: {Task Title}
+Estimated Effort: {low | medium | high}
+Depends on: {[list of task numbers] or "none"}
+#### Test Strategy for Task {N}
+[Extracted from Tests field above]
+#### Acceptance Criteria for Task {N}
+[Derived from component responsibility]
+
+### Failure Modes
+[Consolidated from failure mode analysis above]
 ```
 
 CONSTRAINTS:

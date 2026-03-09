@@ -617,6 +617,28 @@ Copy this protocol into the subagent prompt:
     |-----------|-----------|------------|
     | 🔍 1 | Task N | Verify APG pattern is complete, aria-expanded/selected/pressed is correct, focus management works, state is announced |
 
+    ---
+
+    ### Contract Appendix (for spec-kitty-bridge WP translation)
+
+    When output will be consumed by spec-kitty-bridge, append these standardized sections after the domain-specific output above:
+
+    ### Architecture Overview
+    [Brief summary of component count, ARIA patterns, and keyboard interaction design from the plan above]
+
+    ### Implementation Tasks
+    For each task already listed above, add:
+    #### Task {N}: {Component Name}
+    Estimated Effort: {low | medium | high}
+    Depends on: {[list of task numbers] or "none"}
+    #### Test Strategy for Task {N}
+    [Extracted from Tests field above]
+    #### Acceptance Criteria for Task {N}
+    [Derived from WCAG criteria and APG pattern requirements]
+
+    ### Failure Modes
+    [Consolidated from accessibility design anti-patterns that this plan prevents]
+
     ## References
 
     - [WAI-ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/)

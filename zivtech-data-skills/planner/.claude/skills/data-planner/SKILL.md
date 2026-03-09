@@ -347,6 +347,28 @@ Expected: PASS
 | 🔍 2 | Task 3 | Aggregation logic, denominator correctness |
 | 🔍 3 | Task 5 | End-to-end provenance, fallback handling |
 | 🔍 Final | All tasks | Comprehensive data-critic review |
+
+---
+
+### Contract Appendix (for spec-kitty-bridge WP translation)
+
+When output will be consumed by spec-kitty-bridge, append these standardized sections after the domain-specific output above:
+
+### Architecture Overview
+[Brief summary of calculation count, formula complexity, and data flow design from the plan above]
+
+### Implementation Tasks
+For each task already listed above, add:
+#### Task {N}: {Formula/Pipeline Name}
+Estimated Effort: {low | medium | high}
+Depends on: {[list of task numbers] or "none"}
+#### Test Strategy for Task {N}
+[Extracted from test cases field above]
+#### Acceptance Criteria for Task {N}
+[Derived from formula specification and validation requirements]
+
+### Failure Modes
+[Consolidated from data correctness risks that this plan mitigates]
 ```
 
 HARD GATES:

@@ -364,6 +364,28 @@ How will we know this plan worked?
 🔍 **Final Review:** Before deployment
 **Proposal-Critic focus:** Full plan verification. Pre-mortem scenarios addressed? All assumptions documented? Rollback tested?
 
+---
+
+### Contract Appendix (for spec-kitty-bridge WP translation)
+
+When output will be consumed by spec-kitty-bridge, append these standardized sections after the domain-specific output above:
+
+### Architecture Overview
+[Brief summary of phase count, critical dependencies, and key architectural decisions from the plan above]
+
+### Implementation Tasks
+For each phase already listed above, add:
+#### Task {N}: {Phase Name}
+Estimated Effort: {low | medium | high}
+Depends on: {[list of task numbers] or "none"}
+#### Test Strategy for Task {N}
+[Extracted from Success Criteria field above]
+#### Acceptance Criteria for Task {N}
+[Derived from phase goals and deliverables]
+
+### Failure Modes
+[Consolidated from pre-mortem analysis and risk assessment above]
+
 ```
 
 HARD GATES:

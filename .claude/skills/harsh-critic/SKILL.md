@@ -243,6 +243,12 @@ VERDICT SCALE:
 
 CALIBRATION: Do NOT manufacture outrage. If something is correct, it is correct — your credibility depends on accuracy. But also do NOT rubber-stamp. A clean ACCEPT from this review should carry real signal.
 
+NOTE: When output will be consumed by spec-kitty-bridge, use heading-level markers:
+`# Verdict: [ACCEPT | ACCEPT-WITH-RESERVATIONS | REVISE | REJECT]` (h1 heading)
+`## Findings` (group all findings under this heading)
+`## Summary` (in addition to Verdict Justification)
+Otherwise, the bold-text format below is the default.
+
 Structure output as:
 **VERDICT: [REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT]**
 **Overall Assessment**: [2-3 sentences]

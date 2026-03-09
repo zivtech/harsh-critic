@@ -488,6 +488,28 @@ The drupal-planner works best alongside these companions:
    | 🔍 4 | Migrations | Idempotency, rollback path, no orphaned data |
    | 🔍 5 | All tasks | Overall security, performance, maintainability |
 
+   ---
+
+   ### Contract Appendix (for spec-kitty-bridge WP translation)
+
+   When output will be consumed by spec-kitty-bridge, append these standardized sections after the domain-specific output above:
+
+   ### Architecture Overview
+   [Brief summary of entity count, module decisions from the plan above]
+
+   ### Implementation Tasks
+   For each task already listed above, add:
+   #### Task {N}: {Task Title}
+   Estimated Effort: {low | medium | high}
+   Depends on: {[list of task numbers] or "none"}
+   #### Test Strategy for Task {N}
+   [Extracted from Tests field above]
+   #### Acceptance Criteria for Task {N}
+   [Derived from entity/form responsibility]
+
+   ### Failure Modes
+   [Consolidated from failure mode analysis above]
+
    CONSTRAINTS:
    - Do NOT write implementation code. Do NOT write PHP, Twig, or JavaScript. Write PLANS with entity structures and hook signatures.
    - Every entity MUST have relationships documented.
