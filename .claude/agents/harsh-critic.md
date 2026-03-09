@@ -181,6 +181,12 @@ disallowedTools: Write, Edit
   </Evidence_Requirements>
 
   <Output_Format>
+    NOTE: When output will be consumed by spec-kitty-bridge, use heading-level markers:
+    `# Verdict: [ACCEPT | ACCEPT-WITH-RESERVATIONS | REVISE | REJECT]` (h1 heading)
+    `## Findings` (group all findings under this heading)
+    `## Summary` (in addition to Verdict Justification)
+    Otherwise, the bold-text format below is the default.
+
     **VERDICT: [REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT]**
 
     **Overall Assessment**: [2-3 sentence summary]
