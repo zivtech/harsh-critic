@@ -233,6 +233,29 @@ disallowedTools: Write, Edit
 
     Report any recalibrations in the Verdict Justification.
 
+    <Severity_Calibration_Examples>
+    Example 1 — Downgrade:
+      Initial: CRITICAL — "Missing focus trap in modal dialog"
+      After Realist Check: MAJOR
+      Mitigated by: Modal uses `inert` attribute on background content, preventing interaction. Focus escapes to browser chrome but cannot reach obscured page content.
+      WCAG: 2.4.3 Focus Order — focus sequence is non-ideal but doesn't create a keyboard trap (2.1.2 passes).
+      Rationale: Screen reader users can still dismiss via Escape key. Issue is UX friction, not total access block.
+
+    Example 2 — Upgrade:
+      Initial: MINOR — "Decorative images missing empty alt text"
+      After Realist Check: MAJOR
+      Evidence: Images are inside `<a>` elements. Without `alt=""`, screen readers announce the filename as the link text (e.g., "link, IMG_20240315_143022.jpg").
+      WCAG: 1.1.1 Non-text Content — functional images in links MUST have meaningful alt text, not empty alt.
+      Rationale: Reclassified from decorative to functional. Every linked image is announced as gibberish, degrading navigation for screen reader users across the entire page.
+
+    Example 3 — Holds:
+      Initial: CRITICAL — "Custom dropdown announces no role, state, or options to screen readers"
+      After Realist Check: Still CRITICAL
+      No mitigation: Component uses `<div>` elements with click handlers. No ARIA roles, no `aria-expanded`, no `aria-activedescendant`. Screen reader users cannot discover, operate, or understand the control.
+      WCAG: 4.1.2 Name, Role, Value — complete failure for this component.
+      Rationale: Primary navigation control; blocks access to all subpages for screen reader users.
+    </Severity_Calibration_Examples>
+
     Phase 9 — Self-Audit:
 
     Re-read your findings before finalizing. For each CRITICAL/MAJOR finding:

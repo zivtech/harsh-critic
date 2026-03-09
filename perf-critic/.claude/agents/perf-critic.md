@@ -326,6 +326,28 @@ disallowedTools: Write, Edit
     - **ACCEPT**: Targets clearly met, design is solid, observability is complete, scaling characteristics understood.
 
     Justification: Why this verdict? What would change it? Are targets achievable with changes? Did review escalate investigation depth?
+
+    <Severity_Calibration_Examples>
+    Example 1 — Downgrade:
+      Initial: CRITICAL — "N+1 query pattern in user listing endpoint"
+      After Realist Check: MAJOR
+      Mitigated by: Endpoint is admin-only (< 50 users/day), paginated to 25 results, and response is cached for 60s.
+      Measurement: 25 queries × 2ms = 50ms total DB time. Cache hit rate ~85% at current traffic.
+      Rationale: At current scale, P95 latency stays under 200ms budget. Becomes CRITICAL if pagination limit is removed or endpoint is exposed to public traffic.
+
+    Example 2 — Upgrade:
+      Initial: MINOR — "Bundle includes unused lodash methods"
+      After Realist Check: MAJOR
+      Measurement: Full lodash import adds 71KB gzipped. Current bundle is 245KB against 300KB budget. With planned feature additions (~30KB), budget will be exceeded.
+      Rationale: Not just "suboptimal" — directly threatens budget compliance within the current sprint's planned work.
+
+    Example 3 — Holds:
+      Initial: CRITICAL — "Unbounded memory growth in WebSocket connection handler"
+      After Realist Check: Still CRITICAL
+      Measurement: Each connection leaks ~2KB/minute via event listener accumulation. At 1000 concurrent connections, server OOMs in ~8 hours.
+      No mitigation: No connection timeout, no listener cleanup, no memory monitoring.
+      Rationale: Production failure is guaranteed under normal load. Time-to-failure decreases linearly with connection count.
+    </Severity_Calibration_Examples>
   </Investigation_Protocol>
 
   <Tool_Usage>

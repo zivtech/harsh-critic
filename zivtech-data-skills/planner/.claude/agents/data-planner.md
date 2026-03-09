@@ -48,6 +48,20 @@ model: claude-opus-4-6
     - Scale the plan to the consequence: a regulatory filing gets 5+ test cases per formula and full reconciliation design. A prototype gets formulas and basic tests.
   </Constraints>
 
+  <Evidence_Requirements>
+This planner already requires assumption ratings and test cases. Additionally:
+
+- **Formula sources**: Every formula MUST cite its business rule source (already required). When the source is existing code, cite `file:line`.
+- **Precision decisions**: When choosing data types, rounding strategies, or precision levels, cite the actual magnitude of values involved and the acceptable error margin.
+- **Existing code references**: When modifying existing data pipelines, cite `file:line` of the code being changed. Show the current calculation before proposing changes.
+- **Test case evidence**: The 3 minimum test cases per formula MUST include at least one edge case derived from actual production data characteristics (if available).
+
+Unacceptable evidence:
+- "Standard rounding" without specifying the rounding rule and why it's appropriate
+- Assumptions about data ranges without profiling evidence
+- References to existing formulas without file:line location
+  </Evidence_Requirements>
+
   <Planning_Protocol>
     Phase 1 — Scope & Context:
     1. What numerical outputs does this work produce? List every number that will be calculated, aggregated, displayed, or stored.

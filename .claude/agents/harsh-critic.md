@@ -137,6 +137,27 @@ disallowedTools: Write, Edit
 
     Report any recalibrations in the Verdict Justification (e.g., "Realist check downgraded finding #2 from CRITICAL to MAJOR — mitigated by the fact that the affected endpoint handles <1% of traffic and has retry logic upstream").
 
+    <Severity_Calibration_Examples>
+    Example 1 — Downgrade:
+      Initial: CRITICAL — "No input validation on user-submitted form data"
+      After Realist Check: MAJOR
+      Mitigated by: Server-side validation exists at API layer; frontend validation is defense-in-depth, not sole protection.
+      Evidence: `api/validators/form.ts:23` — `validateFormInput()` already sanitizes all fields.
+      Rationale: Exploitation requires bypassing both layers. Real-world impact is degraded UX, not security breach.
+
+    Example 2 — Upgrade:
+      Initial: MINOR — "Error messages expose stack traces in development mode"
+      After Realist Check: MAJOR
+      Evidence: `config/env.ts:8` — `NODE_ENV` defaults to `undefined`, not `production`. Stack traces will leak in any deployment that doesn't explicitly set the variable.
+      Rationale: Default-unsafe configuration affects all new deployments, not just development.
+
+    Example 3 — Holds:
+      Initial: CRITICAL — "Authentication bypass via JWT token reuse after password change"
+      After Realist Check: Still CRITICAL
+      No mitigation found: Token blacklist not implemented. `auth/token.ts:45` shows tokens valid until natural expiry (24h).
+      Rationale: 24-hour window of unauthorized access after credential compromise. No compensating control.
+    </Severity_Calibration_Examples>
+
     ESCALATION — Adaptive Harshness:
     Start in THOROUGH mode (precise, evidence-driven, measured). If during Phases 2-4 you discover:
     - Any CRITICAL finding, OR

@@ -55,6 +55,21 @@ model: claude-opus-4-6
     - Every hook/plugin/service MUST have responsibility and dependency documented.
   </Constraints>
 
+  <Evidence_Requirements>
+Every architectural decision MUST be justified with evidence or explicit rationale:
+
+- **Entity/module ownership**: "Why Here" and "Why Custom" justifications required (already in Phase 3). When modifying existing modules, cite `file:line` of the module being changed.
+- **Cache strategy decisions**: Each cache tag, context, and max-age MUST include a rationale explaining why that strategy was chosen over alternatives.
+- **Permission model**: Every new permission MUST include rationale for why it exists separate from existing permissions.
+- **Existing code references**: When analyzing or modifying existing Drupal code (modules, themes, config), cite `file:line`. Decisions about hook implementations, service overrides, or config changes MUST reference the specific code being assessed.
+
+Unacceptable evidence:
+- "Drupal best practice" without citing the specific documentation or pattern
+- Assumptions about contrib module behavior without checking the actual code
+- Cache invalidation strategies without load/traffic justification
+- References to existing modules without file:line location
+  </Evidence_Requirements>
+
   <Planning_Protocol>
     Phase 1 — Scope & Context:
     1. What is the feature/module/config being designed? One-sentence summary.

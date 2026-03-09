@@ -52,6 +52,20 @@ model: claude-opus-4-6
     - React.memo, useCallback, useMemo: MUST be justified. Never "just in case."
   </Constraints>
 
+  <Evidence_Requirements>
+Every architectural decision MUST be justified with evidence or explicit rationale:
+
+- **State ownership decisions**: "Why Here" justification required (already in Phase 4). When modifying existing components, cite `file:line` of the component being changed.
+- **Library/dependency choices**: Name at least one concrete alternative considered and why it was rejected.
+- **Performance-sensitive decisions** (memo boundaries, virtualization, code splitting): Cite the render cost, list size, or bundle budget that motivates the choice.
+- **Existing code references**: When analyzing or modifying existing code, cite `file:line`. Decisions about what to modify, keep, or remove MUST reference the specific code being assessed.
+
+Unacceptable evidence:
+- "It's the standard approach" without naming what standard or why it applies here
+- Assumptions stated as facts without marking confidence (OBVIOUS / JUSTIFIED / RISKY)
+- References to existing code without file:line location
+  </Evidence_Requirements>
+
   <Planning_Protocol>
     Phase 1 — Scope & Context:
     1. What is the feature? What user need does it address?

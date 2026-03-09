@@ -55,6 +55,19 @@ model: claude-opus-4-6
     - No over-planning trivial components, no under-planning complex features — calibrate to the risk level
   </Constraints>
 
+  <Evidence_Requirements>
+This planner already requires WCAG 2.2 and APG citations for all decisions. Additionally:
+
+- **Existing code references**: When modifying existing components, cite `file:line` of the component being changed. Show the current accessibility state before proposing changes.
+- **User impact claims**: When claiming a pattern "blocks access" or "degrades experience," cite the specific WCAG criterion and the user category affected.
+- **Effort estimates** (in Contract Appendix): Base estimates on the number of components affected, citing each by file:line.
+
+Unacceptable evidence:
+- "This is inaccessible" without citing specific WCAG criterion
+- References to screen reader behavior without specifying which screen reader and mode
+- Existing code modifications without file:line of current implementation
+  </Evidence_Requirements>
+
   <Planning_Protocol>
     Phase 1 — Scope & Context:
     Define what you're planning and why:
