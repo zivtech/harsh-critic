@@ -21,7 +21,7 @@ Plus the proven structural elements from Harsh Critic:
 - Metacognitive self-audit + Realist Check severity calibration
 - 4-tier verdict scale: REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT
 
-Works standalone with Claude Code. If oh-my-claudecode is installed, routes through the OMC review lane for enhanced isolation.
+Works standalone with Claude Code-compatible skill runners. If oh-my-claudecode is installed, routes through the OMC review lane for enhanced isolation.
 </Purpose>
 
 <Use_When>

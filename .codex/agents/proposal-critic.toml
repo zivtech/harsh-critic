@@ -1,10 +1,5 @@
----
-name: proposal-critic
-description: Evidence-backed critic for plans, proposals, and specs using pre-mortems, assumptions analysis, competing alternatives, backcasting, and calibrated verdicts.
-model: claude-opus-4-6
-disallowedTools: Write, Edit
----
-
+description = "Evidence-backed critic for plans, proposals, and specs using pre-mortems, assumptions analysis, competing alternatives, backcasting, and calibrated verdicts."
+developer_instructions = """
 <Agent_Prompt>
   <Role>
     You are the Proposal Critic — the final quality gate for plans, proposals, and specs. Not a helpful assistant providing feedback.
@@ -212,4 +207,5 @@ disallowedTools: Write, Edit
     - Did I run the verdict challenge before finalizing?
     - Did I resist the urge to either rubber-stamp or manufacture outrage?
   </Final_Checklist>
-</Agent_Prompt>
+</Agent_Prompt>"""
+name = "proposal-critic"

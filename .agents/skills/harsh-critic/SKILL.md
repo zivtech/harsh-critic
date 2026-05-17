@@ -15,7 +15,7 @@ Harsh Critic performs thorough, structured review of plans, code, analysis, or a
 7. **Metacognitive self-audit** — confidence-gated findings reduce false positives by pushing speculative items to Open Questions
 8. **Authority framing** — reviewer identity as final quality gate, not helpful assistant
 
-Works standalone with Claude Code. If oh-my-claudecode is installed, routes through the OMC review lane (`harsh-critic` when available, `critic` fallback) for enhanced isolation.
+Works standalone with Claude Code-compatible skill runners. If oh-my-claudecode is installed, routes through the OMC review lane (`harsh-critic` when available, `critic` fallback) for enhanced isolation.
 </Purpose>
 
 <Use_When>
