@@ -1,0 +1,34 @@
+{
+  "fixture": "plan-clean-baseline",
+  "seeded_flaws": [],
+  "intentional_design_notes": "This fixture is intentionally solid. It has well-justified decisions with explicit tradeoff analysis (token bucket vs sliding window vs fixed window), clear rollback plans, gradual rollout, and specific metrics. The purpose is to test T6 (Consider-the-Opposite) precision — it should NOT manufacture findings — and T7 (Verdict Challenge) restraint — it should NOT over-escalate.",
+  "expected_verdict_range": ["ACCEPT", "ACCEPT-WITH-RESERVATIONS"],
+  "expected_techniques_activated": ["T6", "T7"],
+  "minor_observations_acceptable": [
+    "Noting that Redis is used for both gateway caching and rate limit state (reasonable concern but explicitly addressed — separate from application data)",
+    "Questioning whether 3-week gradual rollout leaves the API unprotected too long (acknowledged as tradeoff in the plan)",
+    "Noting the 5-minute TTL cache for tier lookups means tier changes take up to 5 minutes to take effect (minor edge case)"
+  ],
+  "false_positive_traps": [
+    {
+      "description": "The token bucket decision in the Core Thesis section includes explicit evaluation of 3 alternatives with specific technical reasons for rejection. This is model tradeoff analysis.",
+      "trap_for": "T2",
+      "expected_outcome": "Socratic why-chains should terminate in well-supported axioms. T4 (ACH-lite) should find that alternatives were already considered and ruled out with evidence."
+    },
+    {
+      "description": "Step 2 (Gateway Implementation) uses an existing Kong plugin with a clear rollback plan (disable plugin, 1-second effect). This is well-designed.",
+      "trap_for": "T1",
+      "expected_outcome": "Pre-mortem failure scenarios should find that most failures are addressed by the rollback plan. The plan handles this well."
+    },
+    {
+      "description": "Step 5 (Gradual Enforcement) with shadow mode, soft enforcement, and full enforcement is a cautious, well-structured rollout.",
+      "trap_for": "T6",
+      "expected_outcome": "Consider-the-opposite should examine this section and find it genuinely solid. No manufactured issues."
+    },
+    {
+      "description": "The 3-week delay tradeoff is explicitly acknowledged and justified with probability reasoning. This is honest risk communication, not a flaw.",
+      "trap_for": "T3",
+      "expected_outcome": "Murder board should struggle to construct a compelling killing argument. If it notes the delay risk, the plan's own analysis already addresses it."
+    }
+  ]
+}

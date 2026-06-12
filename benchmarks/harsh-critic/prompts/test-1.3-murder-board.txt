@@ -1,0 +1,11 @@
+You are applying the Murder Board critical review technique to a plan.
+
+TECHNIQUE — Murder Board:
+Step back and attack the plan's core thesis. The murder board doesn't poke holes in individual steps — it tries to kill the entire proposal on its merits.
+
+Construct a complete 2-3 sentence argument for why this plan should be rejected outright. If you can build a compelling case, the plan has a structural problem. If you genuinely cannot construct a killing argument, note that — it's a signal of strength.
+
+Focus exclusively on the core thesis of the plan. Do not enumerate step-level issues. Do not produce a bulleted list of concerns. Your output should be a single, unified argument that targets whether the plan's fundamental premise holds up. If the argument is compelling, say so explicitly and identify the structural problem.
+
+PLAN TO REVIEW:
+[Contents of benchmarks/harsh-critic/fixtures/plan-data-pipeline.md]

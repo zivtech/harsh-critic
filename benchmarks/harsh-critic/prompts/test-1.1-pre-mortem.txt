@@ -1,0 +1,59 @@
+You are a rigorous critical analyst. You have been given a plan to migrate authentication from session cookies to JWT tokens. Apply the Strengthened Pre-Mortem technique to this plan.
+
+TECHNIQUE — Strengthened Pre-Mortem:
+
+Step 1: Use certainty framing. Begin with this exact framing: "An infallible crystal ball shows this plan was executed exactly as written and was a complete fiasco." Then generate 5-7 specific, concrete failure scenarios that explain WHY it was a fiasco.
+
+Step 2 — Black Swan Prompt: "Now generate 1-2 failure scenarios that would make everyone say 'we never could have predicted that.'"
+
+Step 3 — Multi-Horizon Analysis: Run the pre-mortem at three time horizons:
+  - Immediate failure (day 1)
+  - Medium-term failure (1 month in)
+  - Long-term failure (6 months out)
+Each horizon must produce at least 1 distinct failure scenario (not the same failure repeated).
+
+Step 4 — Gap Check: For each failure scenario identified, check whether the plan explicitly addresses it. If the plan does NOT address a failure scenario, flag it as a finding.
+
+PLAN UNDER REVIEW:
+
+# Plan: Migrate Authentication from Session Cookies to JWT Tokens
+
+## Goal
+Migrate the platform's authentication system from server-side session cookies to stateless JWT tokens. Success criteria: zero-downtime migration with all 12,000 daily active users transparently moved to JWT auth within a 2-week rollout window. Post-migration: 99.9% auth success rate, <50ms token validation latency, and full backward compatibility removed by week 4.
+
+## Background
+The current session-cookie system stores sessions in a Redis cluster. As we scale toward 50,000 DAU (projected in 6 months), Redis session storage costs and latency are becoming a bottleneck. JWT tokens eliminate server-side session state entirely.
+
+## Core Thesis
+Migrating to stateless JWT auth will eliminate the Redis session bottleneck and position the platform for 10x user growth without proportional infrastructure cost increases.
+
+## Step 1: Token Schema Design
+Design the JWT payload schema including user ID, roles, permissions, and expiration. Use RS256 signing with rotating key pairs stored in AWS KMS. Token lifetime: 15-minute access tokens, 7-day refresh tokens.
+
+Decision: RS256 over HS256 because our security team recommended asymmetric signing for microservice architectures where multiple services verify tokens but only the auth service signs them.
+
+## Step 2: Auth Service Implementation
+Build the new token issuance and validation service. Endpoints: /auth/token (issue), /auth/refresh (refresh), /auth/revoke (revoke). The service will be deployed as a standalone microservice with its own database for refresh token storage.
+
+## Step 3: Monitoring and Observability Setup
+Deploy Datadog dashboards tracking: token issuance rate, validation latency (p50/p95/p99), refresh success rate, and revocation events. Set up PagerDuty alerts for validation latency >100ms or auth error rate >0.5%. Add structured logging for all auth events with correlation IDs for request tracing.
+
+## Step 4: Dual-Mode Gateway Configuration
+Configure the API gateway to accept both session cookies AND JWT tokens during the migration window. The gateway inspects the Authorization header first; if absent, falls back to the session cookie. This produces a unified internal auth context object regardless of auth method.
+
+## Step 5: Client SDK Migration
+Update all client SDKs (web, iOS, Android) to request and use JWT tokens. On first request after SDK update, the client exchanges its existing session for a JWT token pair. Clients that haven't updated continue using session cookies through the dual-mode gateway.
+
+Decision: We chose a lazy migration (convert on next request) over a forced migration (invalidate all sessions at cutover) because lazy migration avoids a thundering herd at the auth service.
+
+## Step 6: Gradual Rollout
+Roll out the JWT path to users in 4 phases: 1% (canary), 10%, 50%, 100%. Each phase runs for 3 days with monitoring. Rollback at any phase: disable the JWT path in the gateway feature flag and users fall back to session cookies.
+
+## Step 7: Session Cookie Deprecation
+After 100% rollout is stable for 1 week, disable session cookie acceptance in the gateway. Remove the Redis cluster. Archive session-related code.
+
+## Success Metrics
+- Auth success rate >= 99.9%
+- Token validation p99 <50ms
+- Zero user-facing auth errors during migration
+- Redis cluster decommissioned by week 4

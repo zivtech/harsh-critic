@@ -1,0 +1,46 @@
+{
+  "fixture": "plan-data-pipeline",
+  "seeded_flaws": [
+    {
+      "id": "SF-1",
+      "description": "Fragile single-vendor-SLA dependency — The entire plan's core thesis rests on StreamFlow's 99.99% uptime SLA. If StreamFlow fails to meet their SLA (or changes terms, raises prices, gets acquired, or sunsets the product), the entire pipeline collapses with no alternative. Step 7 DR only covers short outages (1 hour buffer). This is a single point of failure at the architectural level.",
+      "target_technique": "T3",
+      "expected_severity": "CRITICAL",
+      "expected_section": "Critical Findings",
+      "location": "Core Thesis + Step 2 + Step 7",
+      "detection_hint": "Murder board killing argument: 'This plan bets the company's real-time analytics capability on a single vendor's SLA — one vendor failure or business decision away from total pipeline collapse.'"
+    },
+    {
+      "id": "SF-2",
+      "description": "Causal chain break between Step 3 output and Step 4 input — Step 3 outputs 'enriched session-level aggregates' to an intermediate topic. Step 4 loads into ClickHouse using 'batch inserts of 10,000 rows every 2 seconds.' But session-level aggregates are variable-size objects (a session might span hundreds of events), not individual rows. The loader's row-based batching doesn't match the session-aggregate output format. What constitutes a 'row' is undefined.",
+      "target_technique": "T5",
+      "expected_severity": "MAJOR",
+      "expected_section": "Major Findings",
+      "location": "Between Step 3 and Step 4",
+      "detection_hint": "Backcasting from Step 4: 'For batch inserts of 10,000 rows to work, Step 3 must produce individual rows.' But Step 3 produces session-level aggregates — format mismatch."
+    },
+    {
+      "id": "SF-3",
+      "description": "Hidden precondition never established — Step 3 performs 'enrichment joins against a user profile lookup table' but the plan never establishes where this lookup table comes from, how it's populated, how it stays current, or what happens when a user profile is missing. This is a silent dependency on an external data source that could cause enrichment failures or stale data.",
+      "target_technique": "T5",
+      "expected_severity": "MAJOR",
+      "expected_section": "Major Findings",
+      "location": "Step 3",
+      "detection_hint": "Backcasting: 'For enrichment joins to work, a current user profile lookup table must exist.' No prior step creates or maintains this table."
+    }
+  ],
+  "expected_verdict_range": ["REJECT"],
+  "expected_techniques_activated": ["T3", "T5"],
+  "false_positive_traps": [
+    {
+      "description": "Step 1 (Event Schema Standardization) with Avro, schema registry, and backward-compatible evolution rules is a well-designed approach to event standardization.",
+      "trap_for": "T6",
+      "expected_outcome": "No findings — this is a solid section following data engineering best practices."
+    },
+    {
+      "description": "Step 6 (Alerting and Anomaly Detection) with z-score anomaly detection on specific metrics and 30-second alert latency is a reasonable approach for the stated use case.",
+      "trap_for": "T2",
+      "expected_outcome": "Socratic questioning may probe the z-score choice, but it terminates in a reasonable axiom (statistical process control is well-established for anomaly detection on streaming metrics)."
+    }
+  ]
+}

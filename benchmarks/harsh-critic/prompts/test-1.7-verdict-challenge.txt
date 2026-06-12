@@ -1,0 +1,29 @@
+TECHNIQUE — Verdict Challenge
+
+Purpose: After reaching a verdict, construct the strongest argument that the verdict is too lenient. Ask: "What's the best case that this should be one tier harsher?" If the challenge is compelling, escalate the verdict.
+
+Application: This technique is applied as a final self-check after a review verdict has been reached. It forces the reviewer to steelman the case for greater severity, then honestly evaluate whether that steelman argument holds up. The technique should sometimes escalate and sometimes not — it is a calibration tool, not a rubber stamp in either direction.
+
+---
+
+PROMPT FOR TEST A (plan-clean-baseline.md):
+
+You have completed a review of plan-clean-baseline.md and reached this verdict:
+
+VERDICT: ACCEPT-WITH-RESERVATIONS
+Justification: The plan is well-structured with clear rollback procedures, explicit tradeoff analysis for the token bucket decision, and gradual enforcement. Minor findings include: (1) the 5-minute TTL cache for tier lookups means tier changes aren't instant, (2) no mention of how rate limits interact with websocket connections if any exist, (3) shadow mode logs could generate significant storage during the observation period. Overall, this is a solid implementation plan.
+
+Now apply the Verdict Challenge technique:
+Construct the strongest argument that your verdict is too lenient — that this plan should be escalated from ACCEPT-WITH-RESERVATIONS to REVISE. Then honestly evaluate whether that argument is compelling enough to warrant escalation.
+
+---
+
+PROMPT FOR TEST B (plan-weak-justification.md):
+
+You have completed a review of plan-weak-justification.md and reached this verdict:
+
+VERDICT: REVISE
+Justification: The plan has several major findings: (1) the Actix-web choice is justified only by benchmark rankings, (2) the RabbitMQ decision is justified by inertia alone, (3) the PostgreSQL migration lacks analysis of write patterns, (4) no alternatives to a full Rust rewrite were considered. The plan needs significant rework on its decision justifications and should evaluate less costly alternatives to a full rewrite.
+
+Now apply the Verdict Challenge technique:
+Construct the strongest argument that your verdict is too lenient — that this plan should be escalated from REVISE to REJECT. Then honestly evaluate whether that argument is compelling enough to warrant escalation.

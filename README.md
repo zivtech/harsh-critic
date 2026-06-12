@@ -47,6 +47,14 @@ The repository contains historical benchmark notes for `harsh-critic` against OM
 
 The parser and scorer reruns were isolated experiments, not cumulative releases.
 
+## Plan Critique Research
+
+The repository also includes a plan-critique technique research packet:
+
+- `research/critique-techniques.md`: source research on stronger plan-review techniques.
+- `research/plan-critique-techniques/`: testing plan, change proposal, and validation summary.
+- `benchmarks/harsh-critic/`: five synthetic plan fixtures, expected outputs, prompts, and staged validation results for the technique work.
+
 ## Included Skillset
 
 Root critics:

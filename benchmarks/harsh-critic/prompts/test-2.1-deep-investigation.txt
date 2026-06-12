@@ -1,0 +1,27 @@
+You are running Test 2.1 from the harsh-critic testing plan: Deep Investigation Group (G1: T1 + T2 + T5).
+
+Read the fixture: /home/user/harsh-critic/benchmarks/harsh-critic/fixtures/plan-auth-migration.md
+
+Apply these THREE techniques together in sequence (Steps 2, 7, and 10 of the investigation protocol). Skip all other steps.
+
+**Step 2 — Strengthened Pre-Mortem (T1):**
+Use certainty framing: "An infallible crystal ball shows this plan was executed exactly as written and was a complete fiasco." Generate 5-7 specific failure scenarios with black swan prompt and 3 time horizons (day 1, 1 month, 6 months). Check if plan addresses each.
+
+**Step 7 — Socratic Deconstruction (T2):**
+For each major decision in the plan, run a 3-level why-chain. Scan for logical fallacies (false dichotomy, appeal to authority, begging the question, survivorship bias).
+
+**Step 10 — Backcasting (T5):**
+Work backward from the plan's stated goals. For each step from the end: "For this step's output to be correct, what must the previous step have produced?" Flag mismatches and unestablished preconditions.
+
+After generating all three technique outputs, evaluate against these success criteria:
+- [ ] All three techniques produce DISTINCT output sections (not merged into one)
+- [ ] Pre-mortem findings and backcasting findings do not simply duplicate each other
+- [ ] Socratic why-chains reference plan decisions, not pre-mortem failure scenarios
+- [ ] Where techniques find the same underlying issue from different angles, this is noted as convergent evidence (strengthens finding, does not create duplicates)
+- [ ] Combined output covers more ground than any single technique alone
+- [ ] No technique's output is truncated or abbreviated due to the others consuming token budget
+
+Save the full output to /home/user/harsh-critic/benchmarks/harsh-critic/results/test-2.1-deep-investigation.md
+Save the prompt to /home/user/harsh-critic/benchmarks/harsh-critic/prompts/test-2.1-deep-investigation.txt
+
+Write the evaluation checklist at the end of the results file. Mark each criterion PASS or FAIL.

@@ -1,0 +1,37 @@
+Test 2.3: Calibration Stack (G3: T6 + T7)
+
+Fixture: plan-clean-baseline.md (Rate Limiting Plan)
+Techniques: Consider-the-Opposite (T6) followed by Verdict Challenge (T7)
+Purpose: Test that the late-pipeline calibration sequence avoids runaway escalation on solid work.
+
+---
+
+Mock Review Context:
+You have completed a full review of the rate limiting plan and found these findings:
+- MAJOR: No mention of how rate limits apply to batch/bulk API endpoints (if any exist)
+- MINOR: 5-minute TTL cache means tier upgrades aren't reflected instantly
+- MINOR: No mention of rate limit behavior during Redis failover
+
+Sections with NO findings: Step 2 (Gateway Implementation), Step 4 (Monitoring and Alerting), Core Thesis decision analysis.
+
+Preliminary verdict: ACCEPT-WITH-RESERVATIONS
+
+---
+
+Phase 4.5 Part B — Consider-the-Opposite (T6):
+For each section with NO findings, explicitly ask:
+1. "What reasons exist to think this section has a hidden flaw I missed?"
+2. "What would have to go wrong here for the plan to fail?"
+Also check: does the plan demonstrate awareness of alternatives and tradeoffs? Absence of tradeoff analysis is itself a finding.
+
+Phase 5 — Verdict Challenge (T7):
+Construct the strongest argument that your verdict is too lenient. "What's the best case that this should be one tier harsher?" If compelling, escalate.
+
+---
+
+Success Criteria:
+- [ ] Consider-the-opposite runs BEFORE verdict challenge (correct ordering)
+- [ ] If T6 surfaces a new finding, T7's verdict challenge accounts for it
+- [ ] If T6 surfaces nothing, T7 still runs its own independent challenge
+- [ ] On the clean baseline, the final verdict is NOT over-escalated by the combination (should remain ACCEPT or AWR)
+- [ ] The two techniques do not create a runaway escalation loop
