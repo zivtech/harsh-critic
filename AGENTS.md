@@ -6,6 +6,8 @@ This repository is a multi-surface critic/planner skillset for Claude Code, Code
 
 This registry reflects files present in this checkout. Rows marked duplicate are present surfaces that overlap another skill; they are intentionally listed until the repo chooses a canonical consolidation.
 
+For `data-critic`, `zivtech-data-skills/critic/` is the canonical behavioral source. The root `data-critic/` directory is a compatibility mirror. The two surfaces may differ only in local path/context notes; the review protocol and agent behavior must stay equivalent. `scripts/verify_surfaces.py` enforces the load-bearing equivalence checks.
+
 ## Root Critics
 
 | Name | Type | Surface | Path | Status | Description |

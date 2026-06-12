@@ -60,10 +60,51 @@ This critic exists because "the code runs without errors" and "the code produces
 - On statistical analysis code where methodology flaws could produce misleading conclusions
 </Best_Times_To_Use>
 
+<Companion_Skills>
+The data-critic is designed to leverage external skills when they are installed. Before starting a review, check if any of these are available and invoke them to enhance the review:
+
+**Always use if installed:**
+- `verification-before-completion` (obra/superpowers) — Enforce evidence-based claims. Never assert "formula is correct" without running verification. Invoke before finalizing verdict.
+- `systematic-debugging` (obra/superpowers) — When a wrong number is found, use this to trace to root cause instead of guessing.
+
+**Use when the code involves statistical methods:**
+- `statistical-analysis` (K-Dense-AI/claude-scientific-skills) — Verify test selection, assumption checking, correct denominators, effect sizes.
+- `statsmodels` (K-Dense-AI/claude-scientific-skills) — Verify time series models, GLM diagnostics, heteroskedasticity/autocorrelation tests.
+
+**Use when formulas are complex:**
+- `sympy` (K-Dense-AI/claude-scientific-skills) — Symbolically verify complex formulas: derive the expected formula, compare against implementation.
+
+**Use when reviewing SQL or database code:**
+- `sql-code-review` (github/awesome-copilot) — SQL injection, performance, schema design, anti-patterns.
+- `postgresql-code-review` (github/awesome-copilot) — PostgreSQL-specific: TIMESTAMPTZ, NUMERIC precision, window functions.
+- `bigquery-pipeline-audit` (github/awesome-copilot) — BigQuery cost safety, idempotency, partition filters.
+
+**Use for adversarial challenge of methodology:**
+- `devils-advocate` (flonat/claude-research) — Multi-turn adversarial debate on methodology choices. Produces Critical/Major/Minor findings.
+- `multi-perspective` (flonat/claude-research) — Parallel investigation from 3-5 disciplinary perspectives with blind spot detection.
+
+**Use when reviewing data pipelines:**
+- `code-archaeology` (flonat/claude-research) — Understand legacy calculation logic before reviewing changes.
+- `pipeline-manifest` (flonat/claude-research) — Map scripts → inputs → outputs → figures. Dependency graph and execution order.
+
+**Use when reviewing financial calculations:**
+- `financial-analyst` (alirezarezvani/claude-skills) — Financial ratio formulas, DCF methodology, variance analysis patterns.
+
+**Use for data profiling (if data is available):**
+- `csv-data-summarizer` (coffeefuelbump) — Quick data profiling to verify assumptions about data shape.
+- `exploratory-data-analysis` (K-Dense-AI/claude-scientific-skills) — Comprehensive EDA with quality metrics and anomaly detection.
+
+**After the review — plan fixes for findings:**
+- `data-planner` (zivtech-data-skills) — When data-critic produces REVISE or REJECT verdicts, invoke data-planner to design corrective implementations with test cases, unit registries, and validation checkpoints before writing fix code.
+
+See `zivtech-data-skills/SKILLS-INVENTORY.md` for the full catalog with installation instructions.
+</Companion_Skills>
+
 <Steps>
 1. **Identify the target**: Determine what code needs review. If no arguments were provided, ask the user what they want reviewed — do not proceed with an empty review.
-2. **Read the work**: If user provides a file path, read it. For large codebases, use `Agent(subagent_type="Explore", model="haiku", ...)` first to map relevant files, tracing data flow from source through transformations to output.
-3. **Route to reviewer agent**: Delegate the review to a subagent with the full protocol below. Choose the routing based on what's available:
+2. **Check for companion skills**: Before starting the review, check if any companion skills listed above are installed. If `verification-before-completion` or `systematic-debugging` are available, plan to invoke them during the review.
+3. **Read the work**: If user provides a file path, read it. For large codebases, use `Agent(subagent_type="Explore", model="haiku", ...)` first to map relevant files, tracing data flow from source through transformations to output.
+4. **Route to reviewer agent**: Delegate the review to a subagent with the full protocol below. Choose the routing based on what's available:
    - **With oh-my-claudecode (preferred)**: `Agent(subagent_type="oh-my-claudecode:data-critic", model="opus", prompt=<review_prompt>)` (fallback to `oh-my-claudecode:critic` if unavailable)
    - **Without oh-my-claudecode**: `Agent(subagent_type="general-purpose", model="opus", prompt=<review_prompt>)`
 
@@ -244,6 +285,12 @@ VERDICT SCALE:
 - ACCEPT: Numerically correct, handles edge cases, assumptions documented — should be rare, earn it
 
 CALIBRATION: Do NOT manufacture data bugs where the math is actually correct. But also do NOT rubber-stamp. Verify every formula — "it looks right" is not verification. Show your work.
+
+NOTE: When output will be consumed by spec-kitty-bridge, use heading-level markers:
+`# Verdict: [ACCEPT | ACCEPT-WITH-RESERVATIONS | REVISE | REJECT]` (h1 heading)
+`## Findings` (group all findings under this heading)
+`## Summary` (in addition to Verdict Justification)
+Otherwise, the bold-text format below is the default.
 
 Structure output as:
 **VERDICT: [REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT]**

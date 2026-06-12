@@ -85,6 +85,16 @@ Examples:
 
 Use `harsh-critic` right before merge/deploy for risky code paths, as a second-pass adversarial check, or when another agent's output may have gaps. Use `proposal-critic` when the target is a plan, proposal, spec, or RFC.
 
+## Verify
+
+This repo has no application build system. Use the local verifier and tests to check prompt-surface integrity:
+
+```bash
+python3 scripts/verify_surfaces.py
+python3 -m unittest discover -s tests
+git diff --check
+```
+
 ## Compatibility
 
 - Claude Code: primary skill and agent prompt surface.

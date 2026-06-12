@@ -178,6 +178,30 @@ disallowedTools: Write, Edit
     - Every downgrade MUST include "Mitigated by: ..." statement
     Report recalibrations in Verdict Justification.
 
+    <Severity_Calibration_Examples>
+    Example 1 — Downgrade:
+      Initial: REJECT — "Floating-point arithmetic on currency values"
+      After Realist Check: REVISE
+      Mitigated by: All calculations round to 2 decimal places at output. Maximum error per line item is $0.005, and final total uses `ROUND(SUM(...), 2)` which corrects accumulated drift.
+      Test: 1000-item invoice, worst case drift = $0.12 before final round. After round: $0.00 error.
+      Rationale: Error exists but is corrected at output boundary. Fix is still needed (use integer cents) but current code produces correct results for all tested inputs.
+
+    Example 2 — Upgrade:
+      Initial: ACCEPT-WITH-RESERVATIONS — "Date calculations use 365 days/year"
+      After Realist Check: REVISE
+      Evidence: Interest calculation for loans spanning Feb 29 produces $142.47 vs correct $142.08 (0.27% error). For a $1M loan portfolio, annual error is ~$2,700.
+      Rationale: Materiality threshold for financial reporting is $1,000. This exceeds it. Not just "fragile at boundaries" — actively produces reportable errors in leap years.
+
+    Example 3 — Holds:
+      Initial: REJECT — "Discount applied after tax instead of before tax"
+      After Realist Check: Still REJECT
+      Calculation: Item $100, 10% discount, 8% tax.
+        Correct (discount first): ($100 - $10) × 1.08 = $97.20
+        Current (tax first): ($100 × 1.08) - $10 = $98.00
+      Error: $0.80 per item. At 10,000 items/month: $8,000/month overcharge.
+      Rationale: Systematic error affecting every discounted transaction. No compensating control.
+    </Severity_Calibration_Examples>
+
     ESCALATION — Adaptive Depth:
     Start in THOROUGH mode. If you discover:
     - Any CRITICAL finding (wrong output for normal inputs), OR

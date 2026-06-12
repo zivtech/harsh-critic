@@ -353,9 +353,10 @@
 
   <!-- Header -->
   <div class="header">
-    <div class="badge">Benchmark Results · March 2026</div>
+    <div class="badge">Historical Benchmark Notes · March 2026</div>
     <h1>harsh-critic Performance: Baseline → v1 → v2</h1>
     <p>Quantified evaluation of code review quality across three agent versions — measuring how accurately and deeply the reviewer surfaces real problems.</p>
+    <p>These numbers are historical notes. The raw benchmark artifact is not present in this checkout, so treat the scores as context until the benchmark harness and results are restored.</p>
   </div>
 
   <!-- Legend -->
@@ -370,7 +371,7 @@
     </div>
     <div class="legend-pill">
       <div class="legend-dot" style="background:var(--v2)"></div>
-      <span>harsh-critic v2 "Even Harsher" <span style="color:var(--muted);font-size:11px;margin-left:4px;">(targets)</span></span>
+      <span>harsh-critic v2 "Even Harsher" <span style="color:var(--muted);font-size:11px;margin-left:4px;">(actual)</span></span>
     </div>
   </div>
 
@@ -561,7 +562,7 @@
   <!-- Footer -->
   <div class="footer">
     <div>harsh-critic · <a href="https://github.com/zivtech/harsh-critic">github.com/zivtech/harsh-critic</a></div>
-    <div style="margin-top:4px">Benchmark run: March 2026 · Model: Claude Opus 4 · Evaluation set: n=24 items across 3 domains</div>
+    <div style="margin-top:4px">Benchmark run: March 2026 historical snapshot · Model: Claude Opus 4 · Evaluation set: n=24 items across 3 domains · raw artifact absent in this checkout</div>
   </div>
 
 </div><!-- /page-wrapper -->
@@ -730,9 +731,9 @@ function drawFPRChart() {
   const chartH = H - PAD.top - PAD.bottom;
 
   const data = [
-    { label: 'Baseline',        val: 53.1, color: COLORS.baseline, note: '53.1%' },
-    { label: 'v1 (sonnet)',     val: 40.5, color: COLORS.fprV1,    note: '40.5%' },
-    { label: 'v2 (opus)',       val: 78.7, color: COLORS.fprV2,    note: '78.7%' },
+    { label: 'Baseline',        val: 53.1, color: COLORS.baseline, note: '53.1%', badge: null },
+    { label: 'v1 (sonnet)',     val: 40.5, color: COLORS.fprV1,    note: '40.5%', badge: 'down-good' },
+    { label: 'v2 (opus)',       val: 78.7, color: COLORS.fprV2,    note: '78.7%', badge: 'up-bad' },
   ];
   const maxVal = 100;
 
@@ -779,11 +780,8 @@ function drawFPRChart() {
     const bh = (d.val / maxVal) * chartH;
     const by = PAD.top + chartH - bh;
     ctx.fillStyle = d.color;
-    if (d.label === 'v2 target') {
-      ctx.shadowColor = COLORS.fprV2;
-      ctx.shadowBlur = 8;
-    } else if (d.label === 'v1') {
-      ctx.shadowColor = COLORS.fprV1;
+    if (d.badge) {
+      ctx.shadowColor = d.badge === 'down-good' ? COLORS.fprV1 : COLORS.fprV2;
       ctx.shadowBlur = 8;
     }
     roundedRect(ctx, bx, by, bw, bh, 5);
@@ -805,15 +803,7 @@ function drawFPRChart() {
     ctx.fillText(d.label, bx + bw/2, H - PAD.bottom + 18);
 
     // Direction badge
-    if (d.label === 'v1') {
-      ctx.fillStyle = 'rgba(239,68,68,0.15)';
-      ctx.beginPath();
-      ctx.arc(bx + bw/2, by + 14, 9, 0, Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle = '#f87171';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.fillText('↑', bx + bw/2, by + 18);
-    } else if (d.label === 'v2 target') {
+    if (d.badge === 'down-good') {
       ctx.fillStyle = 'rgba(34,197,94,0.15)';
       ctx.beginPath();
       ctx.arc(bx + bw/2, by + 14, 9, 0, Math.PI*2);
@@ -821,6 +811,14 @@ function drawFPRChart() {
       ctx.fillStyle = '#34d399';
       ctx.font = 'bold 11px sans-serif';
       ctx.fillText('↓', bx + bw/2, by + 18);
+    } else if (d.badge === 'up-bad') {
+      ctx.fillStyle = 'rgba(239,68,68,0.15)';
+      ctx.beginPath();
+      ctx.arc(bx + bw/2, by + 14, 9, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#f87171';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('↑', bx + bw/2, by + 18);
     }
   });
 }

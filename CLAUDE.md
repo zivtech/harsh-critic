@@ -53,6 +53,18 @@ The root `harsh-critic` and `proposal-critic` assets define the general review a
 - When changing project positioning or descriptions, update `README.md`, `CLAUDE.md`, `AGENTS.md`, root `.claude` skills/agents, `.agents` mirrors, and `.codex` wrappers together.
 - Do not describe benchmark data as current or latest unless the referenced raw artifact exists in this checkout. If the artifact is absent, label the numbers historical.
 
+## Verification
+
+Use the local verifier and tests to check prompt-surface integrity:
+
+```bash
+python3 scripts/verify_surfaces.py
+python3 -m unittest discover -s tests
+git diff --check
+```
+
+Future prompt-surface changes should update `scripts/verify_surfaces.py` when a new invariant is introduced.
+
 ## Installation Paths
 
 - Claude Code skill: copy `.claude/skills/<skill-name>` to `~/.claude/skills/`.

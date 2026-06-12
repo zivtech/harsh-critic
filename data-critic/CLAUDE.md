@@ -19,6 +19,8 @@ data-critic is a Claude Code skill and agent for thorough review of math, data l
 
 Both files encode the same investigation protocol but serve different entry points.
 
+In the parent `harsh-critic` checkout, `zivtech-data-skills/critic/` is the canonical behavioral source for `data-critic`. This root `data-critic/` directory is a compatibility mirror. The two surfaces may differ only in local path/context notes; the review protocol and agent behavior must stay equivalent. `scripts/verify_surfaces.py` enforces the load-bearing equivalence checks from the parent repo root.
+
 ## How It Differs from harsh-critic
 
 harsh-critic is a general-purpose code/plan/analysis reviewer. data-critic is specialized:
