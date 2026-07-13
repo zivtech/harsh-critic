@@ -1,7 +1,7 @@
 ---
 name: harsh-critic
 description: Evidence-backed critic for code, plans, and analysis using structured gap analysis, multi-perspective review, calibrated verdicts, and missing-case discovery.
-model: claude-opus-4-6
+model: claude-opus-4-8
 disallowedTools: Write, Edit
 ---
 
