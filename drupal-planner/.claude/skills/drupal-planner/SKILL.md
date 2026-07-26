@@ -71,7 +71,7 @@ The drupal-planner works best alongside these companions:
 
 **Verification:**
 - `drupal-critic` (drupal-critic): Harsh code review at checkpoints. Verify hooks, permissions, cache tags, migrations, config exports.
-- `drupal-coding-standards` (zivtech-claude-skills): Drupal coding standards (PHP, Twig, JavaScript).
+- `drupal-coding-standards` (zivtech-ai-skills): Drupal coding standards (PHP, Twig, JavaScript).
 
 ## Steps
 
@@ -565,7 +565,7 @@ The drupal-planner works best alongside these companions:
 
 **Verification:**
 - `drupal-critic` (drupal-critic): Harsh code review at checkpoints. Verify hooks, permissions, cache tags, migrations.
-- `drupal-coding-standards` (zivtech-claude-skills): Drupal coding standards compliance.
+- `drupal-coding-standards` (zivtech-ai-skills): Drupal coding standards compliance.
 
 ## Examples
 
