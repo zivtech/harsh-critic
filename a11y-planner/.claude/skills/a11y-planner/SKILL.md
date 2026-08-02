@@ -644,7 +644,7 @@ Copy this protocol into the subagent prompt:
     - [WAI-ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/)
     - [WCAG 2.2 Specification](https://www.w3.org/WAI/WCAG22/quickref/)
     - [a11y-critic skill](https://github.com/zivtech/a11y-critic) — for post-implementation review
-    - [accessibility-testing skill](https://github.com/zivtech/zivtech-claude-skills) — for automated testing
+    - [accessibility-testing skill](https://github.com/zivtech/zivtech-ai-skills) — for automated testing
     ```
 
   </Planning_Protocol>
