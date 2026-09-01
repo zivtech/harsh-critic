@@ -1,0 +1,22 @@
+{
+  "name": "harsh-critic",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Benchmark harness for the harsh-critic / proposal-critic prompt surfaces.",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "bench": "tsx benchmarks/run-all.ts",
+    "bench:save": "tsx benchmarks/run-all.ts --save-baseline",
+    "bench:compare": "tsx benchmarks/run-all.ts --compare",
+    "verify": "python3 scripts/verify_surfaces.py && python3 -m unittest discover -s tests && vitest run"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@types/node": "^22.19.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.17"
+  }
+}

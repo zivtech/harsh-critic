@@ -1,0 +1,122 @@
+{
+  "fixtureId": "plan-weak-justification",
+  "fixturePath": "fixtures/plans/plan-weak-justification.md",
+  "domain": "plan",
+  "expectedVerdict": "REJECT",
+  "isCleanBaseline": false,
+  "findings": [
+    {
+      "id": "SF-1",
+      "severity": "CRITICAL",
+      "category": "finding",
+      "targetTechnique": "T3",
+      "summary": "Core thesis is vapid \u2014 Rust chosen for being fast and memory-safe with no binding-constraint analysis",
+      "keywords": [
+        "Rust",
+        "fast",
+        "memory-safe",
+        "core thesis",
+        "rewrite cost"
+      ],
+      "location": "Core Thesis",
+      "explanation": "The thesis provides no analysis of whether speed and memory safety are the binding constraints, or whether the rewrite cost is justified by the gain."
+    },
+    {
+      "id": "SF-2",
+      "severity": "MAJOR",
+      "category": "finding",
+      "targetTechnique": "T2",
+      "summary": "Actix-web justified by TechEmpower ranking alone, which does not model notification dispatch",
+      "keywords": [
+        "Actix",
+        "TechEmpower",
+        "benchmark",
+        "notification dispatch",
+        "workload"
+      ],
+      "location": "Step 1 decision",
+      "explanation": "TechEmpower measures raw throughput on toy workloads, not notification pipeline patterns. The ranking says nothing about suitability for this workload."
+    },
+    {
+      "id": "SF-3",
+      "severity": "MAJOR",
+      "category": "finding",
+      "targetTechnique": "T2",
+      "summary": "RabbitMQ retained by inertia \u2014 'we already use it' is not a technical argument",
+      "keywords": [
+        "RabbitMQ",
+        "already use",
+        "inertia",
+        "replay",
+        "at-most-once"
+      ],
+      "location": "Step 2 decision",
+      "explanation": "No analysis of whether RabbitMQ's at-most-once default and lack of replay suit a reliability-critical notification system. No tradeoff discussion."
+    },
+    {
+      "id": "SF-4",
+      "severity": "MAJOR",
+      "category": "finding",
+      "targetTechnique": "T2",
+      "summary": "PostgreSQL over MongoDB justified by a platitude about structured data",
+      "keywords": [
+        "PostgreSQL",
+        "MongoDB",
+        "structured data",
+        "generalization",
+        "write throughput"
+      ],
+      "location": "Step 4 decision",
+      "explanation": "'SQL databases are better for structured data' ignores that the notification log is append-heavy, time-series-like. No analysis of write throughput, partitioning, or why MongoDB is insufficient."
+    },
+    {
+      "id": "SF-5",
+      "severity": "MAJOR",
+      "category": "missing",
+      "targetTechnique": "T4",
+      "summary": "No tradeoff analysis anywhere \u2014 every decision is a single option with a one-line justification",
+      "keywords": [
+        "tradeoff",
+        "alternatives",
+        "no downsides",
+        "cost-benefit",
+        "single option"
+      ],
+      "location": "Throughout",
+      "explanation": "Every alternative is ruled out by assertion rather than evidence. No downsides acknowledged, and no cost-benefit analysis for the rewrite itself."
+    },
+    {
+      "id": "SF-6",
+      "severity": "CRITICAL",
+      "category": "missing",
+      "targetTechnique": "T4",
+      "summary": "Disproportionate solution \u2014 full Rust rewrite for occasional GC pauses, cheaper options unconsidered",
+      "keywords": [
+        "GC pause",
+        "disproportionate",
+        "tuning",
+        "worker threads",
+        "rewrite",
+        "alternatives"
+      ],
+      "location": "Background + Core Thesis",
+      "explanation": "The stated problem is occasional 3-second GC pauses at peak. Node.js GC tuning, a newer V8, worker threads, or a buffer to absorb pauses are never considered. A full rewrite is the most expensive possible fix."
+    }
+  ],
+  "x-expectedVerdictRange": [
+    "REJECT"
+  ],
+  "x-targetTechniques": [
+    "T2",
+    "T3",
+    "T7"
+  ],
+  "x-falsePositiveTraps": [
+    {
+      "description": "Step 3 (Channel Handlers) with a common trait interface is a reasonable Rust design pattern. The crate choices (fcm, a2, lettre, reqwest) are standard.",
+      "trap_for": "T6",
+      "expected_outcome": "The implementation approach for channel handlers is fine \u2014 the problem is the decision to rewrite, not how the rewrite is structured."
+    }
+  ],
+  "x-source": "benchmarks/harsh-critic/expected/plan-weak-justification.json"
+}

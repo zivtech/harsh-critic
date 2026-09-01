@@ -1,0 +1,96 @@
+{
+  "fixtureId": "plan-auth-migration",
+  "fixturePath": "fixtures/plans/plan-auth-migration.md",
+  "domain": "plan",
+  "expectedVerdict": "REVISE",
+  "isCleanBaseline": false,
+  "findings": [
+    {
+      "id": "SF-1",
+      "severity": "CRITICAL",
+      "category": "missing",
+      "targetTechnique": "T1",
+      "summary": "No rollback path for users already converted to JWT \u2014 they lose auth entirely",
+      "keywords": [
+        "rollback",
+        "JWT",
+        "active sessions",
+        "feature flag",
+        "lose auth"
+      ],
+      "location": "Step 6 (Gradual Rollout)",
+      "explanation": "Step 6 rollback disables the JWT path via feature flag but says nothing about users holding a JWT and no session cookie. Those users lose authentication on rollback."
+    },
+    {
+      "id": "SF-2",
+      "severity": "MAJOR",
+      "category": "missing",
+      "targetTechnique": "T1",
+      "summary": "No day-1 failure handling when the token refresh endpoint is unavailable",
+      "keywords": [
+        "refresh",
+        "endpoint",
+        "unavailable",
+        "locked out",
+        "access token"
+      ],
+      "location": "Step 2 (Auth Service Implementation)",
+      "explanation": "Step 2 defines 15-minute access tokens and 7-day refresh tokens but never describes refresh-endpoint failure. Users with expired access tokens and a down refresh service are locked out."
+    },
+    {
+      "id": "SF-3",
+      "severity": "MAJOR",
+      "category": "missing",
+      "targetTechnique": "T1",
+      "summary": "New auth service never sized for the 50,000 DAU target; refresh-token store is a new bottleneck",
+      "keywords": [
+        "scaling",
+        "50,000",
+        "DAU",
+        "refresh token",
+        "database",
+        "bottleneck"
+      ],
+      "location": "Step 2 + Background",
+      "explanation": "The motivation is scaling to 50,000 DAU, but the plan never sizes the JWT service for that load. Refresh-token storage in its own database is a new stateful bottleneck that can hit the same wall as Redis sessions."
+    },
+    {
+      "id": "SF-4",
+      "severity": "MAJOR",
+      "category": "finding",
+      "targetTechnique": "T5",
+      "summary": "Causal chain break \u2014 clients have no signal telling them to exchange sessions for JWTs",
+      "keywords": [
+        "Step 4",
+        "Step 5",
+        "exchange",
+        "migration signal",
+        "gateway",
+        "undefined"
+      ],
+      "location": "Between Step 4 and Step 5",
+      "explanation": "Step 4 produces a unified internal auth context from either method, so the gateway silently accepts both. Step 5 expects clients to exchange sessions for JWTs, but nothing signals them to migrate. The lazy migration trigger is undefined."
+    }
+  ],
+  "x-expectedVerdictRange": [
+    "REVISE",
+    "REJECT"
+  ],
+  "x-targetTechniques": [
+    "T1",
+    "T5"
+  ],
+  "x-falsePositiveTraps": [
+    {
+      "description": "Section 3 (Monitoring and Observability Setup) is genuinely solid \u2014 Datadog dashboards, PagerDuty alerts with specific thresholds, structured logging with correlation IDs. This is a well-designed monitoring plan.",
+      "trap_for": "T6",
+      "expected_outcome": "No spurious findings generated for this section. T6 should examine it and conclude it is sound."
+    },
+    {
+      "description": "The RS256 decision in Step 1 is well-justified \u2014 asymmetric signing for microservice token verification is a legitimate security architecture choice.",
+      "trap_for": "T2",
+      "expected_outcome": "Socratic why-chain should terminate in a supported axiom (asymmetric crypto best practice), not flag this as a flaw."
+    }
+  ],
+  "x-source": "benchmarks/harsh-critic/expected/plan-auth-migration.json"
+}

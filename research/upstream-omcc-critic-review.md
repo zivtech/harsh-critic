@@ -256,3 +256,71 @@ Codex wrappers are read through `tomllib` and checked on `developer_instructions
 ### 8.2 Not yet done
 
 Steps 4–6 of §5 remain: importing the benchmark harness (adds a Node/vitest toolchain to a Python-verified repo), fixing the two scorer defects in §4, correcting the FPR framing in `docs/index.html`, and re-benchmarking the current prompt against live fixtures. The last of those costs real API spend and should not start until the scorer is fixed — otherwise it reproduces the same misleading numbers.
+
+---
+
+## 9. Harness import — three further defects found
+
+Importing the harness (§5 step 4) surfaced three defects beyond the two in §4. All five were reproduced by executing the code, not by reading it.
+
+### 9.1 `parseCriticOutput` is an unbound re-export — runtime `ReferenceError`
+
+`benchmarks/shared/parser.ts:12` exposes the canonical parser with:
+
+```ts
+export { parseAgentOutput as parseCriticOutput } from '../harsh-critic/scoring/parser.ts';
+```
+
+A re-export makes the name available to *consumers* of the module. It does **not** create a binding in the module's own scope. Line 243 then calls `parseCriticOutput(...)`, which throws:
+
+```
+ReferenceError: parseCriticOutput is not defined
+```
+
+Every `'critic'` and `'harsh-critic'` call through the shared parser fails. It stayed latent upstream because their `tsconfig.json` has `include: ["src/**/*"]`, so `benchmarks/` is never typechecked, and their critic benchmark bypasses the shared module. Anything routed through the generalized shared runner — the path `run-all.ts` scales to — breaks. Fixed here by adding a real import alongside the re-export; three regression tests cover it.
+
+### 9.2 The `critic` arm is parsed with the pre-consolidation parser
+
+`parseAgentOutput` sent every non-`harsh-critic` agent to `parseCritic`, which:
+
+- recognises only the `OKAY` / `REJECT` verdict vocabulary, and
+- **hardcodes** `criticalFindings: []`, `minorFindings: []`, `missingItems: []`, empty `perspectiveNotes`, and all three process-compliance flags to `false`.
+
+That was correct until 2026-03-08. Since `8641e541`, `critic` **is** the consolidated harsh-critic and emits the four-tier verdict with severity buckets, a What's Missing section, and perspective notes. The parser was never updated, so all of it is discarded.
+
+Measured on one identical review, changing only the agent label:
+
+| Parsed as | verdict | critical | major | missing | process flags | composite |
+|---|---|---:|---:|---:|---|---:|
+| `harsh-critic` | `REVISE` | 2 | 1 | 1 | 3/3 | **0.857** |
+| `critic` | `""` | 0 | 0 | 0 | 0/3 | **0.100** |
+
+An 8.6× swing from the label alone. The `critic` arm forfeits the 40% of composite weight carried by `missingCoverage`, `perspectiveCoverage`, and process compliance, plus true-positive credit for every critical finding and gap — and does not even recover the verdict, because the legacy matcher wants the keyword bracketed directly by asterisks (`**[REJECT]**`) while current output writes `**VERDICT: REJECT**`.
+
+Fixed by routing `critic` to the harsh-critic parser and naming the old format `critic-legacy`, so historical runs stay reproducible. Upstream's own parser tests passed `'critic'` with legacy-format samples, so **the tests agreed with the bug** — they have been retargeted onto `critic-legacy`, and four tests now pin the corrected routing.
+
+### 9.3 The canonical reporter zero-fills missing observations
+
+`benchmarks/harsh-critic/scoring/reporter.ts` computed head-to-head with `harsh?.scores.compositeScore ?? 0`. A fixture that ran for only one agent produced a fabricated landslide win for that agent. The same file also published an all-zero aggregate for an agent that never ran, which reads as catastrophic performance rather than absence.
+
+This is precisely the practice upstream's newer `benchmarks/shared/reporter.ts` was written to eliminate — pair by key, never zero-fill, mark unpaired observations. The shared layer got that treatment in `5ba52b08` (#3650); the canonical critic reporter never did. Fixed here: unpaired fixtures are excluded from scoring and reported as `unpairedFixtures`, and the aggregate map is partial.
+
+### 9.4 What this means for the historical table
+
+`README.md`'s three historical runs are dated 2026-03-03, five days **before** consolidation, so the `critic` arm was genuinely the legacy agent and §9.2 does not apply to them. But the comparison was still structurally unfair: the composite awards 40% of its weight to dimensions the legacy output format cannot express — no What's Missing, no perspective notes, no pre-commitment. The legacy critic's score was capped by format, not by review quality.
+
+So the headline `+48.1%` delta measures **format conformance**, not gap detection. `README.md` and `docs/index.html` have been corrected to say so.
+
+---
+
+## 10. Harness status
+
+Imported from upstream `e9e8fa38` and wired to this repo. Every local change carries a `LOCAL FIX` or `LOCAL ADAPTATION` comment naming the upstream commit, so the delta stays auditable.
+
+**Adaptations:** `harsh-critic` now loads its prompt from the **live** `.claude/agents/harsh-critic.md` rather than a stale archived snapshot — the point of the exercise. Baselines are pinned under `prompts/`: `critic.md` (upstream's current critic) and `critic-legacy.md` (pre-consolidation). `run-all.ts` is trimmed to the one benchmark this repo carries. Default model moved from `claude-opus-4-6` to `claude-opus-4-8` to match the agent pins. One upstream test that read sibling `debugger/` and `executor/` ground truth now writes its own, preserving the invariant without the coupling.
+
+**Fixtures and answer key:** the five plan fixtures moved to `fixtures/plans/`, and `ground-truth/*.json` was hand-authored from `expected/*.json` — keywords grounded in the seeded text rather than auto-extracted, and 7 of 16 findings categorised `missing` so they exercise the 20%-weighted `missingCoverage` dimension. Per-technique attribution (`targetTechnique`, our T1–T7) and the 11 `false_positive_traps` are preserved as `x-` fields; upstream ground truth has nowhere to put either. Seven tests validate the answer key against the harness schema, including that every keyword set is matchable under the proportional threshold.
+
+**State:** `npx tsc --noEmit` clean, 74 vitest tests pass without an API key, `--dry-run` validates the full pipeline, and the Python verifier plus its 21 tests still pass.
+
+**Still open:** the two §4 scorer defects. A live run before those are fixed would reproduce the same misleading numbers, so the re-benchmark is deliberately not started.

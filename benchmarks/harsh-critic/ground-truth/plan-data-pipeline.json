@@ -1,0 +1,78 @@
+{
+  "fixtureId": "plan-data-pipeline",
+  "fixturePath": "fixtures/plans/plan-data-pipeline.md",
+  "domain": "plan",
+  "expectedVerdict": "REJECT",
+  "isCleanBaseline": false,
+  "findings": [
+    {
+      "id": "SF-1",
+      "severity": "CRITICAL",
+      "category": "finding",
+      "targetTechnique": "T3",
+      "summary": "Entire thesis rests on a single vendor's SLA with no alternative \u2014 architectural single point of failure",
+      "keywords": [
+        "StreamFlow",
+        "vendor",
+        "SLA",
+        "single point of failure",
+        "no alternative"
+      ],
+      "location": "Core Thesis + Step 2 + Step 7",
+      "explanation": "The plan bets the whole pipeline on StreamFlow's 99.99% SLA. Vendor failure, price change, acquisition, or sunset collapses the pipeline. Step 7 DR covers only a 1-hour buffer."
+    },
+    {
+      "id": "SF-2",
+      "severity": "MAJOR",
+      "category": "finding",
+      "targetTechnique": "T5",
+      "summary": "Format mismatch \u2014 Step 3 emits session aggregates, Step 4 batches fixed row counts",
+      "keywords": [
+        "Step 3",
+        "Step 4",
+        "session",
+        "aggregate",
+        "rows",
+        "batch"
+      ],
+      "location": "Between Step 3 and Step 4",
+      "explanation": "Step 3 outputs variable-size session-level aggregates. Step 4 loads ClickHouse with batch inserts of 10,000 rows every 2 seconds. Row-based batching does not match session-aggregate output, and what counts as a row is undefined."
+    },
+    {
+      "id": "SF-3",
+      "severity": "MAJOR",
+      "category": "missing",
+      "targetTechnique": "T5",
+      "summary": "Enrichment depends on a user profile lookup table no step creates or maintains",
+      "keywords": [
+        "enrichment",
+        "user profile",
+        "lookup table",
+        "never establishes",
+        "stale"
+      ],
+      "location": "Step 3",
+      "explanation": "Step 3 joins against a user profile lookup table, but the plan never says where it comes from, how it is populated, how it stays current, or what happens on a missing profile."
+    }
+  ],
+  "x-expectedVerdictRange": [
+    "REJECT"
+  ],
+  "x-targetTechniques": [
+    "T3",
+    "T5"
+  ],
+  "x-falsePositiveTraps": [
+    {
+      "description": "Step 1 (Event Schema Standardization) with Avro, schema registry, and backward-compatible evolution rules is a well-designed approach to event standardization.",
+      "trap_for": "T6",
+      "expected_outcome": "No findings \u2014 this is a solid section following data engineering best practices."
+    },
+    {
+      "description": "Step 6 (Alerting and Anomaly Detection) with z-score anomaly detection on specific metrics and 30-second alert latency is a reasonable approach for the stated use case.",
+      "trap_for": "T2",
+      "expected_outcome": "Socratic questioning may probe the z-score choice, but it terminates in a reasonable axiom (statistical process control is well-established for anomaly detection on streaming metrics)."
+    }
+  ],
+  "x-source": "benchmarks/harsh-critic/expected/plan-data-pipeline.json"
+}

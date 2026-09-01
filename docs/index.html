@@ -413,8 +413,8 @@
     <div class="fpr-callout">
       <span class="icon">⚠</span>
       <div>
-        <strong>False Positive Rate — lower is better.</strong>
-        v2 on Opus increased FPR to 78.7% — the model generates more spurious findings alongside its dramatically higher detection rate. This is an acceptable tradeoff: 51.8% true positive rate + 62.5% missing coverage far outweighs the noise. The Realist Check and Self-Audit phases help calibrate severity on the findings that matter.
+        <strong>&ldquo;False Positive Rate&rdquo; is really an unmatched-finding rate — read it with care.</strong>
+        These are historical numbers. The scorer that produced them counts a finding as a false positive whenever it fails to keyword-match an entry in an 8-fixture answer key. It never assesses whether the finding is correct. A reviewer that surfaces more genuine issues therefore scores a <em>higher</em> FPR by construction: on a controlled re-run, adding two real, evidence-cited findings outside the key moved FPR from 0% to 67% and lowered the composite from 0.700 to 0.633. So the 40.5% &rarr; 78.7% rise is not evidence that v2 is noisier; the same mechanism that lifted true positives to 51.8% and missing coverage to 62.5% also lifts this number. Treat it as unresolved until the scorer is corrected and the benchmark is re-run.
       </div>
     </div>
   </div>
@@ -423,7 +423,7 @@
   <div class="card">
     <div class="section-label" style="margin-bottom:4px">Precision</div>
     <div class="section-title" style="margin-bottom:4px">False Positive Rate (Lower is Better)</div>
-    <div class="section-sub" style="margin-bottom:20px">FPR measures how often the reviewer flags items that are not genuine issues. v2 on Opus trades higher FPR for dramatically better detection. The Self-Audit and Realist Check phases help calibrate what survives into the final report.</div>
+    <div class="section-sub" style="margin-bottom:20px">Historical figures. FPR here measures how often a finding fails to match the fixture answer key &mdash; not whether it is a genuine issue, which the scorer never evaluates. Correct findings outside the key are counted against the reviewer, so this metric rises with detection rather than against it.</div>
     <div class="chart-container">
       <canvas id="fprChart" height="220"></canvas>
     </div>

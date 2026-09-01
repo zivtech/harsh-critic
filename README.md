@@ -37,7 +37,14 @@ LLM-based reviewers often evaluate what is present and under-report what is abse
 
 ## Historical Benchmarks
 
-The repository contains historical benchmark notes for `harsh-critic` against OMC's built-in `critic`. The raw benchmark artifact referenced by older docs is not present in this checkout, so these numbers should be treated as historical notes until the benchmark harness and results are restored.
+The repository contains historical benchmark notes for `harsh-critic` against OMC's built-in `critic`. The raw benchmark artifact referenced by older docs is not present in this checkout, so these numbers remain historical notes.
+
+**These deltas do not measure gap-detection quality.** The harness has since been restored (see below), and reviewing its scorer surfaced two reasons the comparison was structurally unfair to the `critic` arm:
+
+1. The composite awards 40% of its weight to `missingCoverage` (20%), `perspectiveCoverage` (10%), and process compliance (10%). The pre-consolidation `critic` emitted a `**[OKAY / REJECT]**` verdict with no What's Missing section, no perspective notes, and no pre-commitment step — so its output format could not express those dimensions at all. Its score was capped by format, not by review quality.
+2. The scorer's false-positive rate counts any finding that fails to keyword-match the answer key, without assessing correctness. A reviewer that finds more real issues scores worse on it.
+
+Treat the table as a record of what was run, not as evidence that one prompt detects more than the other. A corrected re-run is pending.
 
 | Run | What changed | Model | harsh-critic composite | OMC critic composite | Delta | Win/Loss/Tie |
 |---|---|---|---:|---:|---:|---:|
@@ -46,6 +53,21 @@ The repository contains historical benchmark notes for `harsh-critic` against OM
 | Scorer-calibration rerun (2026-03-03 23:54) | Calibrated keyword match thresholds | `claude-opus-4-6` | 24.7% | 13.8% | +10.9% | 4/1/3 |
 
 The parser and scorer reruns were isolated experiments, not cumulative releases.
+
+## Benchmark Harness
+
+The harness is restored from `yeachan-heo/oh-my-claudecode` @ `e9e8fa38`, with local fixes recorded inline as `LOCAL FIX` comments.
+
+```bash
+npm install
+npm test                                                   # 74 tests, no API key needed
+npx tsx benchmarks/harsh-critic/run-benchmark.ts --dry-run  # validate the pipeline
+npm run bench                                              # live run; needs ANTHROPIC_API_KEY
+```
+
+`harsh-critic` is benchmarked from the **live** prompt at `.claude/agents/harsh-critic.md`. Comparison baselines are pinned snapshots under `benchmarks/harsh-critic/prompts/`: `critic.md` (upstream's current consolidated critic) and `critic-legacy.md` (the pre-consolidation critic, for reproducing the historical runs above).
+
+Known scorer defects are documented in `research/upstream-omcc-critic-review.md` §4. Two remain unfixed and affect any live run — a perfect clean-baseline scores 0.35, and valid findings outside the answer key count as false positives. Fix those before trusting new numbers.
 
 ## Plan Critique Research
 
