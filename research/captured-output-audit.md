@@ -127,3 +127,88 @@ Where the remaining difference actually sits, from the audit rather than the sco
 The three fixes in `5202aae` were made while watching the delta move — defensible individually, wrong as a loop. This pass inverted the order: the audit was written first from reading, the counts became tests, the parser was fixed until the tests passed, and only then was anything re-scored. The one scorer change (D5) was made with its predicted direction recorded in advance; the prediction was right about direction and wrong about magnitude on one fixture, which is recorded above rather than smoothed away.
 
 Re-scoring is free — the raw outputs are saved. There is no reason to spend quota to re-run before the fixture defects in §3 and §4 are fixed.
+
+---
+
+## 7. Fixture repairs, 2026-09-01
+
+### 7.1 `plan-clean-baseline` rebuilt
+
+All six defects in §3 are resolved, and the gaps both arms raised are closed:
+
+| Was | Now |
+|---|---|
+| Token bucket + `rate-limiting-advanced` (which does window counters) | Sliding window, with token bucket rejected *because* the plugin has no token-bucket mode and a custom Lua plugin would have to be owned |
+| `~0.1ms` vs `~3ms` charging Redis to one option only | States all three ride the same Redis and are latency-neutral; the round-trip is load-tested in Step 6, not asserted |
+| Week 2 "soft enforcement" returning `429` | Week 2 serves HTTP 200 with a `RateLimit-Warning` header |
+| 95% reduction on 4 incidents | Peak single-key capacity share 40% → <10%, time-to-mitigate <5 min, false rejections <0.05% of 429s, all baselined in Week 1 shadow mode |
+| Redis failure policy unstated | Explicit fail-open, with a backend-error alert and a Step 6 failure drill |
+| "probability ... is low" (~60%) | "roughly 0.9 expected incidents ... more likely than not that we absorb one", justified on retained status quo |
+
+Also closed: rate-limit key definition, burst semantics (two explicit windows), unauthenticated scope, counter sync strategy, shadow-mode mechanism, `Retry-After` jitter, policy-file ownership, alert denominators, and a pre-enforcement load-test gate.
+
+Two factual claims in the rebuilt plan were verified against Kong's plugin reference before it was called clean: `rate-limiting-advanced` accepts arrays of `limit`/`window_size` ("There must be a matching number of window limits and sizes specified"), so the two-window design is real; and it has no native dry-run mode, so the plan is right to implement shadow mode as a `pre-function`.
+
+`allowedObservations` grew from 3 to 6, all explicitly acknowledged in the plan. The five traps were rewritten to describe the rebuilt text.
+
+**The two captured `plan-clean-baseline` outputs are now stale for scoring** — they reviewed the old plan. `fixtures/MANIFEST.json` records each plan's SHA-256 at capture time and a test fails if a plan drifts without being declared stale. They remain valid parser fixtures.
+
+### 7.2 Ground-truth repairs
+
+- **SF-3 on `plan-weak-justification` withdrawn** (moved to `x-withdrawnFindings` with its reason).
+- **Traps corrected** on `plan-api-redesign`, `plan-data-pipeline` and `plan-auth-migration`, each narrowed to the part that is genuinely sound, with the mis-specified part called out. Real defects those traps had been shielding are recorded as `x-knownUnseededDefects` rather than promoted to seeded flaws — adding flaws would silently change the recall denominator while the delta was in view.
+- The `plan-auth-migration` RS256 trap was left alone: both arms credited it explicitly, so it works as designed.
+
+---
+
+## 8. The instrument cannot resolve the difference it is being asked to measure
+
+### 8.1 A keyword set was fitted to one arm, and caught
+
+The first attempt at repairing SF-5's keywords widened them with `cheaper alternative`, `approach selection`, `false dichotomy` and `no alternatives section`. Those are close to a verbatim transcription of one arm's finding sentence, read during the audit and then written into the key. Symmetry check:
+
+| SF-5 keyword set | threshold | harsh-critic | baseline |
+|---|---|---|---|
+| original | ≥2 of 5 | 1 — miss | 1 — miss |
+| **first repair (arm-fitted)** | ≥5 of 12 | **6 — match** | **2 — miss** |
+| concept terms, wider | ≥3 of 7 | 3 — match | 2 — miss |
+| **concept terms, original threshold (kept)** | ≥2 of 5 | 2 — match | 2 — match |
+
+The kept set is `alternative, considered, cost-benefit, downside, tradeoff` — terms from SF-5's own summary and explanation, at the original 2-of-5 threshold. The rule that produced it: **keyword sets come from the flaw's description, never from an agent's output.** The note is recorded in the ground truth so the next person re-runs the symmetry check before editing it.
+
+Both arms now score 100% on `plan-weak-justification`, which matches the hand audit.
+
+### 8.2 The whole remaining delta rests on one word form
+
+After the repairs, on the four fixtures whose captured outputs are still valid:
+
+| | composite | TPR | missing cov. | evidence |
+|---|---|---|---|---|
+| harsh-critic | 99.0% | 100% | 100% | 91.5% |
+| baseline critic | 88.8% | 91.7% | 75.0% | 94.2% |
+| **delta** | **+10.1** | | | |
+
+Every point of that gap is `plan-api-redesign`, where the baseline scores 58.3%. The cause is SF-3, keyed on `REST | never evaluates | payload reduction | operational complexity | non-diagnostic`, needing 2:
+
+- harsh-critic wrote "gets **zero payload reduction**" → matches `REST` + `payload reduction` = 2. **Match.**
+- the baseline wrote "Average response **payload size reduced by 40%**" → matches `REST` only = 1. **Miss.**
+
+Same concept, different word order, one keyword short. The baseline does address SF-3 — C1 covers "no alternative was evaluated" and M2 covers the unfounded 40% payload goal — but the matcher scores per finding, so a concept split across two findings cannot accumulate to the threshold.
+
+Flipping that single substring:
+
+```
+as measured:     harsh 99.0   baseline 88.8   delta +10.1
+if SF-3 matched: harsh 99.0   baseline 99.3   delta  -0.3
+```
+
+**A one-word morphological difference on one fixture swings the delta by 10.4 points — larger than the entire measured effect.** The instrument's resolution is worse than the thing it is measuring. At n=1, this suite cannot distinguish the two prompts, and no number it produces today should be quoted as an advantage.
+
+SF-3 was deliberately **not** adjusted. Three separate repairs today each moved the delta, and the SF-5 error shows how easily "fixing the instrument" becomes fitting it. Changing SF-3 while its effect is known would be the same mistake with the sign reversed.
+
+### 8.3 What would actually settle it
+
+1. **Run 3× per cell and average**, per upstream's README. At n=1 nothing here is separable from noise.
+2. **Replace substring keyword matching.** It decides outcomes on word form. Either match on the flaw concept with a model-graded rubric, or let a concept accumulate across an output's findings instead of requiring one finding to carry the threshold.
+3. **Re-capture `plan-clean-baseline` outputs** against the rebuilt plan — it is the only fixture that can produce an FPR, and there is currently no valid data for it.
+4. Only then report a delta.

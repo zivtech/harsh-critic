@@ -10,7 +10,7 @@
       "severity": "MAJOR",
       "category": "finding",
       "targetTechnique": "T2",
-      "summary": "Appeal to authority \u2014 GraphQL justified by GitHub/Shopify/Stripe adoption and CTO conference experience",
+      "summary": "Appeal to authority — GraphQL justified by GitHub/Shopify/Stripe adoption and CTO conference experience",
       "keywords": [
         "appeal to authority",
         "GraphQL",
@@ -26,7 +26,7 @@
       "severity": "MAJOR",
       "category": "finding",
       "targetTechnique": "T4",
-      "summary": "False dichotomy \u2014 GraphQL vs current REST v1, with no REST v2 option considered",
+      "summary": "False dichotomy — GraphQL vs current REST v1, with no REST v2 option considered",
       "keywords": [
         "false dichotomy",
         "REST v2",
@@ -51,7 +51,7 @@
         "operational complexity",
         "non-diagnostic"
       ],
-      "location": "Throughout \u2014 absence of alternatives analysis",
+      "location": "Throughout — absence of alternatives analysis",
       "explanation": "The cited evidence (8-12 calls per screen, mobile latency) is consistent with GraphQL AND with REST v2 compound documents. Non-diagnostic evidence cannot select between them, and the plan never tries."
     }
   ],
@@ -64,15 +64,21 @@
   ],
   "x-falsePositiveTraps": [
     {
-      "description": "Step 3 (Authentication and Authorization) is well-designed \u2014 reusing existing OAuth2 middleware is correct, and directive-based field auth with explicit schema visibility is a reasonable approach with a stated rationale.",
+      "description": "Step 3 reuses the existing OAuth2 token validation middleware. That part is correct and should not be flagged.",
       "trap_for": "T2",
-      "expected_outcome": "Socratic why-chain on the directive decision should find the reasoning terminates in a supported assertion (schema visibility principle). Not a flaw."
+      "expected_outcome": "Reusing proven OAuth2 middleware is sound. NOTE (corrected 2026-09-01): the directive-based field auth in the same step is NOT part of this trap. A static @auth(requires: ADMIN) role gate cannot express ownership over a Users/Organizations/Projects/Tasks/Comments domain, and flagging that is a legitimate find, not a false positive."
     },
     {
-      "description": "Step 4 (Performance Optimization) with query complexity analysis, persistent queries, and CDN caching is a solid GraphQL hardening strategy. These are industry-standard mitigations.",
+      "description": "Step 4's query complexity budget and persisted-query allowlisting are industry-standard GraphQL hardening and should not be flagged as unsound.",
       "trap_for": "T6",
-      "expected_outcome": "Consider-the-opposite should not manufacture issues here. This section addresses real GraphQL operational concerns."
+      "expected_outcome": "Complexity limits and persisted queries are real mitigations. NOTE (corrected 2026-09-01): CDN caching in the same step is NOT part of this trap. Deriving Cache-Control from 'query complexity' is a category error — complexity does not determine cacheability — and caching authenticated per-user responses at a shared CDN without identity in the cache key is a genuine cross-user leak. Both arms flagged it correctly."
     }
   ],
-  "x-source": "benchmarks/harsh-critic/expected/plan-api-redesign.json"
+  "x-source": "benchmarks/harsh-critic/expected/plan-api-redesign.json",
+  "x-knownUnseededDefects": [
+    "Step 4 CDN caching: Cache-Control derived from query complexity is a category error, and authenticated responses shared-cached without identity in the cache key is a cross-user data leak. Real defect, not seeded — finding it earns no recall credit but is not noise.",
+    "Step 3 field auth: directive-only role gating cannot express instance/tenant ownership in this domain. Real defect, not seeded.",
+    "Step 4 persisted-query allowlisting for 'production clients' contradicts the Background's 'enterprise customers have requested more flexible querying'. Real defect, not seeded."
+  ],
+  "x-trapsReauditedOn": "2026-09-01"
 }

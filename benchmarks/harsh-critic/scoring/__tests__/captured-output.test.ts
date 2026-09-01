@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseAgentOutput } from '../parser.js';
@@ -58,6 +59,46 @@ function parseFixture(key: string) {
   const text = readFileSync(join(FIXTURES_DIR, `${key}.md`), 'utf8');
   return parseAgentOutput(text, agentOf(key));
 }
+
+describe('captured outputs are only scored against the plan they reviewed', () => {
+  // The captured outputs are frozen artifacts of the 2026-09-01 run. Editing a
+  // fixture plan afterwards silently invalidates them for scoring -- which is
+  // precisely the class of stale-artifact error this whole audit was about.
+  // Parser assertions over these files stay valid regardless; only scoring does
+  // not. Any drifted plan must be declared, with a reason.
+  const manifest = JSON.parse(
+    readFileSync(join(FIXTURES_DIR, 'MANIFEST.json'), 'utf8'),
+  ) as {
+    planSha256AtCapture: Record<string, string>;
+    staleForScoring: Record<string, string>;
+  };
+
+  const planPath = (fixtureId: string) =>
+    join(FIXTURES_DIR, '..', '..', '..', 'fixtures', 'plans', `${fixtureId}.md`);
+
+  test.each(Object.keys(manifest.planSha256AtCapture))(
+    '%s: plan is unchanged since capture, or is declared stale',
+    (fixtureId) => {
+      const current = createHash('sha256')
+        .update(readFileSync(planPath(fixtureId)))
+        .digest('hex');
+      if (current === manifest.planSha256AtCapture[fixtureId]) return;
+      expect(
+        manifest.staleForScoring[fixtureId],
+        `${fixtureId}: plan text changed since the outputs were captured, so those outputs can no ` +
+          `longer be scored against it. Declare it in MANIFEST.json staleForScoring with a reason, ` +
+          `and re-run before reporting any number for this fixture.`,
+      ).toBeTruthy();
+    },
+  );
+
+  test('plan-clean-baseline is stale for scoring after the rebuild', () => {
+    // Guards the specific case: the original fixture was not clean, so its two
+    // captured outputs reviewed a different plan and cannot back a precision
+    // claim against the rebuilt ground truth.
+    expect(manifest.staleForScoring['plan-clean-baseline']).toMatch(/rebuilt/i);
+  });
+});
 
 describe('captured live-run outputs: audit coverage', () => {
   test('every captured fixture has an audit entry', () => {

@@ -465,17 +465,38 @@ Separately, two ground-truth entries on `plan-weak-justification` are defective:
 
 **Still not a result.** n=1 per cell; two of five fixtures are known-defective; the FPR column is an unmatched-finding rate. From the audit rather than the score, the residual edge is narrow and specific: harsh-critic answers SF-2/SF-4 head-on on `plan-auth-migration` where the baseline is adjacent, and uses the ACH vocabulary SF-3 keys on. Expect modest, not the 48% the historical docs implied.
 
-### 13.4 Next step
+### 13.4 Fixture repairs — done 2026-09-01
 
-**Fix the fixtures, not the instrument.** In order:
+All of §13.4's original list is done. Detail in [`captured-output-audit.md`](captured-output-audit.md) §7–8.
 
-1. Rebuild `plan-clean-baseline` so it is actually clean — remove the Kong/token-bucket contradiction, the 429 "soft enforcement" incoherence, the 95%-on-N=4 metric, the non-like-for-like latency comparison — or retire it and write a new precision fixture. Until then it is measuring noise.
-2. Withdraw SF-3 on `plan-weak-justification`; widen SF-5's keywords to the vocabulary models actually use ("no cheaper alternative", "alternatives analysis", "false dichotomy").
-3. Re-audit the false-positive traps against the plan text; at least three assert soundness that does not survive checking.
-4. Only then re-run — 3× per cell, per upstream's README — and only then report a delta.
+- **`plan-clean-baseline` rebuilt.** All six defects resolved and the gaps both arms raised closed. Two Kong facts re-verified against the plugin reference before calling it clean. Its two captured outputs are now **stale for scoring** — `fixtures/MANIFEST.json` records each plan's SHA-256 at capture time and a test fails if a plan drifts without being declared stale.
+- **SF-3 on `plan-weak-justification` withdrawn**; SF-5's keywords rebuilt from the flaw's own description.
+- **Traps corrected** on the other three fixtures, each narrowed to the genuinely sound part. Real defects they were shielding are recorded as `x-knownUnseededDefects` rather than promoted to seeded flaws, which would have changed the recall denominator while the delta was in view.
 
-Re-scoring stays free while the raw outputs are saved. Do not spend quota re-running against known-broken fixtures.
+### 13.5 Two things worth carrying forward more than the number
 
-### 13.5 Loose ends
+**A keyword set was fitted to one arm, and caught.** The first SF-5 repair widened the keys with phrasing lifted from one arm's finding sentence; it scored 6 keywords for that arm against 2 for the other. Replaced with concept terms from the flaw's own description at the original threshold, after which both arms match. The rule now recorded in the ground truth: **keyword sets come from the flaw's description, never from an agent's output**, and any edit must re-run the symmetry check across both arms.
+
+**The instrument cannot resolve the effect.** On the four fixtures with valid captured outputs the delta is +10.1 points, and every point of it is `plan-api-redesign` / SF-3, decided by one substring: harsh-critic wrote "zero payload reduction" (matches), the baseline wrote "payload size reduced by 40%" (one keyword short). The baseline does address SF-3, split across C1 and M2, but the matcher scores per finding so a concept split across two cannot accumulate.
+
+```
+as measured:     harsh 99.0   baseline 88.8   delta +10.1
+if SF-3 matched: harsh 99.0   baseline 99.3   delta  -0.3
+```
+
+**One word form on one fixture swings the delta 10.4 points — more than the whole measured effect.** At n=1 this suite cannot distinguish the two prompts. SF-3 was deliberately left alone: three repairs today each moved the delta, and adjusting it while its effect is known would repeat the SF-5 mistake with the sign reversed.
+
+### 13.6 Next step
+
+The fixtures are repaired. What remains is the measurement itself:
+
+1. **Run 3× per cell and average**, per upstream's README. At n=1 nothing here is separable from noise, and §13.5 shows the instrument's resolution is worse than the effect.
+2. **Replace substring keyword matching** — it decides outcomes on word form. Either grade the flaw concept with a model-graded rubric, or let a concept accumulate across an output's findings rather than requiring one finding to carry the threshold.
+3. **Re-capture `plan-clean-baseline` outputs** against the rebuilt plan. It is the only fixture that can produce an FPR and there is no valid data for it now.
+4. Only then report a delta.
+
+Re-scoring the four valid fixtures stays free while their raw outputs are saved.
+
+### 13.7 Loose ends
 
 - The dead `ANTHROPIC_API_KEY` export (§12.5) is unchanged and still inert.

@@ -10,7 +10,7 @@
       "severity": "CRITICAL",
       "category": "finding",
       "targetTechnique": "T3",
-      "summary": "Entire thesis rests on a single vendor's SLA with no alternative \u2014 architectural single point of failure",
+      "summary": "Entire thesis rests on a single vendor's SLA with no alternative — architectural single point of failure",
       "keywords": [
         "StreamFlow",
         "vendor",
@@ -26,7 +26,7 @@
       "severity": "MAJOR",
       "category": "finding",
       "targetTechnique": "T5",
-      "summary": "Format mismatch \u2014 Step 3 emits session aggregates, Step 4 batches fixed row counts",
+      "summary": "Format mismatch — Step 3 emits session aggregates, Step 4 batches fixed row counts",
       "keywords": [
         "Step 3",
         "Step 4",
@@ -64,15 +64,20 @@
   ],
   "x-falsePositiveTraps": [
     {
-      "description": "Step 1 (Event Schema Standardization) with Avro, schema registry, and backward-compatible evolution rules is a well-designed approach to event standardization.",
+      "description": "Step 1 (Event Schema Standardization) with Avro, a schema registry, and backward-compatible evolution rules is a well-designed approach to event standardization.",
       "trap_for": "T6",
-      "expected_outcome": "No findings \u2014 this is a solid section following data engineering best practices."
+      "expected_outcome": "No findings — this is a solid section following data engineering best practice. Noting that Avro expresses optionality as a null union with a default is a fair precision nit, not a defect."
     },
     {
-      "description": "Step 6 (Alerting and Anomaly Detection) with z-score anomaly detection on specific metrics and 30-second alert latency is a reasonable approach for the stated use case.",
+      "description": "Running statistical anomaly detection as a secondary consumer on its own topic is a reasonable architecture for the stated use case.",
       "trap_for": "T2",
-      "expected_outcome": "Socratic questioning may probe the z-score choice, but it terminates in a reasonable axiom (statistical process control is well-established for anomaly detection on streaming metrics)."
+      "expected_outcome": "The consumer topology is sound. NOTE (corrected 2026-09-01): the z-score choice is NOT part of this trap. Conversion rate, cart abandonment and page error rate are strongly seasonal (time-of-day, day-of-week), and a stationary z-score against them is a known false-positive generator. Both arms flagged it correctly. 'Alerts within 30 seconds of detection' is also circular as a detection-latency metric."
     }
   ],
-  "x-source": "benchmarks/harsh-critic/expected/plan-data-pipeline.json"
+  "x-source": "benchmarks/harsh-critic/expected/plan-data-pipeline.json",
+  "x-knownUnseededDefects": [
+    "Step 6 z-score anomaly detection is stationary and applied to strongly seasonal metrics; it will produce alert fatigue. Real defect, not seeded.",
+    "Step 6 'anomalies trigger alerts within 30 seconds of detection' is circular — it measures time from detection, not time from occurrence. Real defect, not seeded."
+  ],
+  "x-trapsReauditedOn": "2026-09-01"
 }

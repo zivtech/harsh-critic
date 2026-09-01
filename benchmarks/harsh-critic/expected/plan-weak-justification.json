@@ -20,15 +20,6 @@
       "detection_hint": "Socratic level 2: 'Why do TechEmpower benchmarks predict performance for notification dispatch?' — chain collapses, no evidence of relevance."
     },
     {
-      "id": "SF-3",
-      "description": "RabbitMQ decision justified by inertia only — 'because we already use RabbitMQ' is not a technical argument. No analysis of whether RabbitMQ's features (at-most-once default, no replay) are suitable for a reliability-critical notification system. No tradeoff discussion.",
-      "target_technique": "T2",
-      "expected_severity": "MAJOR",
-      "expected_section": "Major Findings",
-      "location": "Step 2 decision",
-      "detection_hint": "Socratic level 1: 'Why keep RabbitMQ?' Answer: 'We already use it.' Level 2: 'Why is that sufficient?' — collapses, no analysis."
-    },
-    {
       "id": "SF-4",
       "description": "PostgreSQL over MongoDB justified by platitude — 'SQL databases are better for structured data' is a generalization that ignores context. The notification log is append-heavy, time-series-like data. No analysis of write throughput, partitioning strategy, or why the current MongoDB setup is insufficient.",
       "target_technique": "T2",
@@ -44,7 +35,15 @@
       "expected_severity": "MAJOR",
       "expected_section": "What's Missing",
       "location": "Throughout",
-      "detection_hint": "ACH-lite: Every alternative is ruled out by assertion, not evidence. Non-diagnostic reasoning throughout."
+      "detection_hint": "ACH-lite: Every alternative is ruled out by assertion, not evidence. Non-diagnostic reasoning throughout.",
+      "keywords": [
+        "alternative",
+        "considered",
+        "cost-benefit",
+        "downside",
+        "tradeoff"
+      ],
+      "keyword_note": "Boundary-sensitive. SF-5's concept is stated in many vocabularies, so this keyword set decides detection at the 2-of-5 threshold. Terms are taken from SF-5's own summary and explanation, never from an agent's output. A first attempt on 2026-09-01 widened the set using phrasing lifted from one arm's finding ('cheaper alternative', 'approach selection', 'false dichotomy') and scored 6 keywords for that arm against 2 for the other -- fitting the key to a result. Symmetry check at the time: original set, both arms miss (1); arm-fitted set, 6 vs 2; this set, 2 vs 2. If you change these keywords, re-run that symmetry check across both arms before keeping the change. See research/captured-output-audit.md section 4."
     },
     {
       "id": "SF-6",
@@ -56,13 +55,32 @@
       "detection_hint": "Competing alternatives: Node.js GC tuning, worker threads, or a Go rewrite are all less costly alternatives that could solve the same problem."
     }
   ],
-  "expected_verdict_range": ["REJECT"],
-  "expected_techniques_activated": ["T2", "T3", "T7"],
+  "expected_verdict_range": [
+    "REJECT"
+  ],
+  "expected_techniques_activated": [
+    "T2",
+    "T3",
+    "T7"
+  ],
   "false_positive_traps": [
     {
       "description": "Step 3 (Channel Handlers) with a common trait interface is a reasonable Rust design pattern. The crate choices (fcm, a2, lettre, reqwest) are standard.",
       "trap_for": "T6",
       "expected_outcome": "The implementation approach for channel handlers is fine — the problem is the decision to rewrite, not how the rewrite is structured."
+    }
+  ],
+  "withdrawn_flaws": [
+    {
+      "id": "SF-3",
+      "description": "RabbitMQ decision justified by inertia only — 'because we already use RabbitMQ' is not a technical argument. No analysis of whether RabbitMQ's features (at-most-once default, no replay) are suitable for a reliability-critical notification system. No tradeoff discussion.",
+      "target_technique": "T2",
+      "expected_severity": "MAJOR",
+      "expected_section": "Major Findings",
+      "location": "Step 2 decision",
+      "detection_hint": "Socratic level 1: 'Why keep RabbitMQ?' Answer: 'We already use it.' Level 2: 'Why is that sufficient?' — collapses, no analysis.",
+      "withdrawn_on": "2026-09-01",
+      "withdrawn_because": "Both arms judged the RabbitMQ decision sound, and the flaw premise (\"at-most-once default\") is wrong -- RabbitMQ with acks is at-least-once. See research/captured-output-audit.md section 4."
     }
   ]
 }

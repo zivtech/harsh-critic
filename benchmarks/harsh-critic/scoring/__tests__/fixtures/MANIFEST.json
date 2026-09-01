@@ -1,0 +1,16 @@
+{
+  "_comment": "Plan text each captured output actually reviewed, by sha256. The 2026-09-01 live run's raw outputs are frozen artifacts: if a fixture plan is edited afterwards, scoring those outputs against the new ground truth is invalid. captured-output.test.ts enforces that any output whose plan has changed is listed in staleForScoring with a reason. Parser assertions over these files stay valid either way -- they test parsing of fixed text.",
+  "capturedOn": "2026-09-01",
+  "runner": "claude-cli",
+  "samplesPerCell": 1,
+  "planSha256AtCapture": {
+    "plan-api-redesign": "f9957a42835b66e81c85ae64e8534d89d447b37ef2ef19025413014f3964e7d4",
+    "plan-auth-migration": "eaf90814bf3b91c3217b1fe495f1219dc7cad1068e6de286f8e95c9c8d093e78",
+    "plan-clean-baseline": "3d165c93bb832db30c7062a1d41c02b19697c0202dfb0c8af0fdc8c94c5b1faa",
+    "plan-data-pipeline": "9db87f16327a8acbe9bcd3a886a0a970cda94fdd48fe555fd3ebbbad1fda12d5",
+    "plan-weak-justification": "e525acf571581141115b443ee4da576dd79ea69ce528a7826f2756a47b0f678b"
+  },
+  "staleForScoring": {
+    "plan-clean-baseline": "Plan rebuilt 2026-09-01: the original was not clean (six real defects, three verified outside the plan text). The two captured outputs reviewed the old text, so they cannot be scored against the rebuilt ground truth. They remain valid parser fixtures. A fresh run is required for any precision or FPR number. See research/captured-output-audit.md section 3."
+  }
+}

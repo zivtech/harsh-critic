@@ -10,7 +10,7 @@
       "severity": "CRITICAL",
       "category": "finding",
       "targetTechnique": "T3",
-      "summary": "Core thesis is vapid \u2014 Rust chosen for being fast and memory-safe with no binding-constraint analysis",
+      "summary": "Core thesis is vapid — Rust chosen for being fast and memory-safe with no binding-constraint analysis",
       "keywords": [
         "Rust",
         "fast",
@@ -38,22 +38,6 @@
       "explanation": "TechEmpower measures raw throughput on toy workloads, not notification pipeline patterns. The ranking says nothing about suitability for this workload."
     },
     {
-      "id": "SF-3",
-      "severity": "MAJOR",
-      "category": "finding",
-      "targetTechnique": "T2",
-      "summary": "RabbitMQ retained by inertia \u2014 'we already use it' is not a technical argument",
-      "keywords": [
-        "RabbitMQ",
-        "already use",
-        "inertia",
-        "replay",
-        "at-most-once"
-      ],
-      "location": "Step 2 decision",
-      "explanation": "No analysis of whether RabbitMQ's at-most-once default and lack of replay suit a reliability-critical notification system. No tradeoff discussion."
-    },
-    {
       "id": "SF-4",
       "severity": "MAJOR",
       "category": "finding",
@@ -74,23 +58,24 @@
       "severity": "MAJOR",
       "category": "missing",
       "targetTechnique": "T4",
-      "summary": "No tradeoff analysis anywhere \u2014 every decision is a single option with a one-line justification",
+      "summary": "No tradeoff analysis anywhere — every decision is a single option with a one-line justification",
       "keywords": [
-        "tradeoff",
-        "alternatives",
-        "no downsides",
+        "alternative",
+        "considered",
         "cost-benefit",
-        "single option"
+        "downside",
+        "tradeoff"
       ],
       "location": "Throughout",
-      "explanation": "Every alternative is ruled out by assertion rather than evidence. No downsides acknowledged, and no cost-benefit analysis for the rewrite itself."
+      "explanation": "Every alternative is ruled out by assertion rather than evidence. No downsides acknowledged, and no cost-benefit analysis for the rewrite itself.",
+      "x-keywordNote": "Boundary-sensitive. SF-5's concept is stated in many vocabularies, so this keyword set decides detection at the 2-of-5 threshold. Terms are taken from SF-5's own summary and explanation, never from an agent's output. A first attempt on 2026-09-01 widened the set using phrasing lifted from one arm's finding ('cheaper alternative', 'approach selection', 'false dichotomy') and scored 6 keywords for that arm against 2 for the other -- fitting the key to a result. Symmetry check at the time: original set, both arms miss (1); arm-fitted set, 6 vs 2; this set, 2 vs 2. If you change these keywords, re-run that symmetry check across both arms before keeping the change. See research/captured-output-audit.md section 4."
     },
     {
       "id": "SF-6",
       "severity": "CRITICAL",
       "category": "missing",
       "targetTechnique": "T4",
-      "summary": "Disproportionate solution \u2014 full Rust rewrite for occasional GC pauses, cheaper options unconsidered",
+      "summary": "Disproportionate solution — full Rust rewrite for occasional GC pauses, cheaper options unconsidered",
       "keywords": [
         "GC pause",
         "disproportionate",
@@ -115,8 +100,28 @@
     {
       "description": "Step 3 (Channel Handlers) with a common trait interface is a reasonable Rust design pattern. The crate choices (fcm, a2, lettre, reqwest) are standard.",
       "trap_for": "T6",
-      "expected_outcome": "The implementation approach for channel handlers is fine \u2014 the problem is the decision to rewrite, not how the rewrite is structured."
+      "expected_outcome": "The implementation approach for channel handlers is fine — the problem is the decision to rewrite, not how the rewrite is structured."
     }
   ],
-  "x-source": "benchmarks/harsh-critic/expected/plan-weak-justification.json"
+  "x-source": "benchmarks/harsh-critic/expected/plan-weak-justification.json",
+  "x-withdrawnFindings": [
+    {
+      "id": "SF-3",
+      "severity": "MAJOR",
+      "category": "finding",
+      "targetTechnique": "T2",
+      "summary": "RabbitMQ retained by inertia — 'we already use it' is not a technical argument",
+      "keywords": [
+        "RabbitMQ",
+        "already use",
+        "inertia",
+        "replay",
+        "at-most-once"
+      ],
+      "location": "Step 2 decision",
+      "explanation": "No analysis of whether RabbitMQ's at-most-once default and lack of replay suit a reliability-critical notification system. No tradeoff discussion.",
+      "withdrawnOn": "2026-09-01",
+      "withdrawnBecause": "Both benchmark arms examined the RabbitMQ decision and judged it sound ('a reasonable, correctly-scoped decision'; 'a sound, well-reasoned restraint'). The entry's technical premise is also wrong: RabbitMQ with acknowledgements is at-least-once, not at-most-once. Both arms used the correct fact to derive a real finding about missing idempotency/dedup. Keeping this keyed scored both arms as having missed a flaw that is not one. See research/captured-output-audit.md §4."
+    }
+  ]
 }

@@ -38,18 +38,28 @@
       "detection_hint": "Backcasting from Step 5: 'For clients to exchange sessions for JWTs, what must Step 4 have produced?' Answer: a migration signal/prompt, which Step 4 does not produce."
     }
   ],
-  "expected_verdict_range": ["REVISE", "REJECT"],
-  "expected_techniques_activated": ["T1", "T5"],
+  "expected_verdict_range": [
+    "REVISE",
+    "REJECT"
+  ],
+  "expected_techniques_activated": [
+    "T1",
+    "T5"
+  ],
   "false_positive_traps": [
     {
-      "description": "Section 3 (Monitoring and Observability Setup) is genuinely solid — Datadog dashboards, PagerDuty alerts with specific thresholds, structured logging with correlation IDs. This is a well-designed monitoring plan.",
+      "description": "Section 3's Datadog dashboards, structured logging with correlation IDs, and the decision to stand monitoring up before rollout are genuinely well designed.",
       "trap_for": "T6",
-      "expected_outcome": "No spurious findings generated for this section. T6 should examine it and conclude it is sound."
+      "expected_outcome": "The observability structure and its ordering before rollout are sound. NOTE (corrected 2026-09-01): the alert thresholds are NOT part of this trap. PagerDuty pages at >100ms against a p99 <50ms SLO and at >0.5% error against a 99.9% (0.1%) success SLO, so the alerts fire only well after the SLO is breached. Both arms flagged it correctly."
     },
     {
-      "description": "The RS256 decision in Step 1 is well-justified — asymmetric signing for microservice token verification is a legitimate security architecture choice.",
+      "description": "The RS256 decision in Step 1 is well-justified — asymmetric signing for multi-service token verification is a legitimate security architecture choice.",
       "trap_for": "T2",
-      "expected_outcome": "Socratic why-chain should terminate in a supported axiom (asymmetric crypto best practice), not flag this as a flaw."
+      "expected_outcome": "Socratic why-chain should terminate in a supported axiom (asymmetric crypto for a multi-verifier topology), not flag this as a flaw. Both arms credited it explicitly in the 2026-09-01 run — this trap works as designed."
     }
+  ],
+  "known_unseeded_defects": [
+    "Step 3 alert thresholds sit above the stated SLOs (100ms vs 50ms p99; 0.5% vs 0.1% error), so monitoring cannot catch an SLO breach in time. Real defect, not seeded.",
+    "'Zero user-facing auth errors during migration' contradicts the 99.9% success-rate metric in the same list. Real defect, not seeded."
   ]
 }

@@ -1,34 +1,48 @@
 {
   "fixture": "plan-clean-baseline",
   "seeded_flaws": [],
-  "intentional_design_notes": "This fixture is intentionally solid. It has well-justified decisions with explicit tradeoff analysis (token bucket vs sliding window vs fixed window), clear rollback plans, gradual rollout, and specific metrics. The purpose is to test T6 (Consider-the-Opposite) precision — it should NOT manufacture findings — and T7 (Verdict Challenge) restraint — it should NOT over-escalate.",
-  "expected_verdict_range": ["ACCEPT", "ACCEPT-WITH-RESERVATIONS"],
-  "expected_techniques_activated": ["T6", "T7"],
+  "intentional_design_notes": "This fixture is intentionally solid, and was rebuilt on 2026-09-01 because the original was not. The original committed to a token bucket and then named Kong's rate-limiting-advanced plugin, which implements window counters and not a token bucket; compared the two algorithms on a latency basis that charged the Redis round-trip to only one of them; defined a week-2 'soft enforcement' stage that returned 429, which is a rejection; set a 95%-reduction metric on a base rate of 4 incidents; left the Redis failure policy unstated; and called a ~60% chance of an incident during the grace window 'low'. Both benchmark arms found most of those independently, so every correct finding scored as a false positive and the suite's only precision instrument measured the wrong thing. The rebuilt plan resolves all six and closes the gaps both arms raised (rate-limit key, burst semantics, unauthenticated scope, counter sync strategy, shadow-mode mechanism, load-test gate). Purpose is unchanged: test T6 (Consider-the-Opposite) precision — it should NOT manufacture findings — and T7 (Verdict Challenge) restraint — it should NOT over-escalate. See research/captured-output-audit.md §3.",
+  "expected_verdict_range": [
+    "ACCEPT",
+    "ACCEPT-WITH-RESERVATIONS"
+  ],
+  "expected_techniques_activated": [
+    "T6",
+    "T7"
+  ],
   "minor_observations_acceptable": [
-    "Noting that Redis is used for both gateway caching and rate limit state (reasonable concern but explicitly addressed — separate from application data)",
-    "Questioning whether 3-week gradual rollout leaves the API unprotected too long (acknowledged as tradeoff in the plan)",
-    "Noting the 5-minute TTL cache for tier lookups means tier changes take up to 5 minutes to take effect (minor edge case)"
+    "Redis serves both gateway caching and rate-limit state",
+    "Three-week gradual rollout leaves the API unprotected longer",
+    "Five-minute tier cache means tier changes take up to 5 minutes to apply",
+    "Sliding window shapes bursts less smoothly than a token bucket",
+    "Per-key limiting does not catch abuse spread across many keys on one account",
+    "Synchronous Redis reads on every request add a round-trip to the hot path"
   ],
   "false_positive_traps": [
     {
-      "description": "The token bucket decision in the Core Thesis section includes explicit evaluation of 3 alternatives with specific technical reasons for rejection. This is model tradeoff analysis.",
+      "description": "The Core Thesis evaluates three algorithms and rejects token bucket for a concrete, checkable reason: the plugin already in production implements window counters, so token bucket would mean owning a custom Lua plugin. That is real tradeoff analysis with a stated cost, not a preference.",
       "trap_for": "T2",
-      "expected_outcome": "Socratic why-chains should terminate in well-supported axioms. T4 (ACH-lite) should find that alternatives were already considered and ruled out with evidence."
+      "expected_outcome": "Socratic why-chains terminate in a supported reason (maintenance cost of a custom plugin). T4 (ACH-lite) should find the alternatives were considered and ruled out with evidence. Verify the plugin claim before treating it as a flaw: rate-limiting-advanced takes window_type fixed|sliding and has no token-bucket mode."
     },
     {
-      "description": "Step 2 (Gateway Implementation) uses an existing Kong plugin with a clear rollback plan (disable plugin, 1-second effect). This is well-designed.",
+      "description": "Step 2 uses an existing plugin with an explicit fail-open policy, an alert on backend errors, a stated counter strategy, and a 1-second rollback. Step 6 drills the Redis failure and the mitigation path before enforcement.",
       "trap_for": "T1",
-      "expected_outcome": "Pre-mortem failure scenarios should find that most failures are addressed by the rollback plan. The plan handles this well."
+      "expected_outcome": "Pre-mortem failure scenarios are addressed by the rollback, the fail-open choice and the Step 6 drills. Flagging 'Redis failure policy unspecified' is a stale finding against the pre-2026-09-01 fixture, not this one."
     },
     {
-      "description": "Step 5 (Gradual Enforcement) with shadow mode, soft enforcement, and full enforcement is a cautious, well-structured rollout.",
+      "description": "Step 5's three stages are distinct and coherent: shadow mode serves every request and logs decisions, advisory enforcement serves 200 with a warning header, full enforcement returns 429. No stage contradicts its stated purpose.",
       "trap_for": "T6",
-      "expected_outcome": "Consider-the-opposite should examine this section and find it genuinely solid. No manufactured issues."
+      "expected_outcome": "Consider-the-opposite should examine the ramp and find it genuinely sound. The week-2 429 incoherence of the original fixture is gone — advisory enforcement now serves the request."
     },
     {
-      "description": "The 3-week delay tradeoff is explicitly acknowledged and justified with probability reasoning. This is honest risk communication, not a flaw.",
+      "description": "The 3-week delay tradeoff is quantified honestly: ~0.9 expected incidents over the window, stated as more likely than not, and accepted on the ground that the grace period is no worse than the status quo plus shadow logs and an override lever.",
       "trap_for": "T3",
-      "expected_outcome": "Murder board should struggle to construct a compelling killing argument. If it notes the delay risk, the plan's own analysis already addresses it."
+      "expected_outcome": "Murder board should struggle to construct a compelling killing argument. The arithmetic is correct — 4 incidents/quarter over 3 weeks gives lambda ~0.92 and P(>=1) ~60% — so attacking the probability claim is attacking a correct number."
+    },
+    {
+      "description": "Success Metrics are each measurable against a Week 1 shadow-mode baseline, with a definition and a measurement method: added p99 latency under load, false rejections as a share of 429s from counter divergence, peak single-key capacity share, time to mitigate.",
+      "trap_for": "T7",
+      "expected_outcome": "Verdict challenge should not escalate on 'unmeasurable metrics'. The 95%-on-N=4 vanity metric and the unfalsifiable 'zero false rejections' gate were removed in the rebuild."
     }
   ]
 }
