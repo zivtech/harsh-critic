@@ -2,8 +2,8 @@
  * Benchmark runner for harsh-critic vs critic agent evaluation.
  *
  * Usage:
- *   ANTHROPIC_API_KEY=sk-... npx tsx benchmarks/harsh-critic/run-benchmark.ts [options]
- *   npx tsx benchmarks/harsh-critic/run-benchmark.ts --runner claude-cli [options]
+ *   npx tsx benchmarks/harsh-critic/run-benchmark.ts [options]
+ *   ANTHROPIC_API_KEY=sk-... npx tsx benchmarks/harsh-critic/run-benchmark.ts --runner api
  *
  * Options:
  *   --agent harsh-critic|critic|critic-legacy|both
@@ -14,12 +14,13 @@
  *   --fixture <fixture-id>             Run a single fixture only
  *   --output-dir <path>                Where to write results (default: benchmarks/harsh-critic/results)
  *   --model <model>                    Claude model to use (default: claude-opus-4-8)
- *   --runner api|claude-cli            api (default) calls the Anthropic API and
- *                                      needs ANTHROPIC_API_KEY. claude-cli shells
- *                                      out to `claude -p`, which runs on the
- *                                      signed-in Claude subscription instead.
- *                                      See the Runner block below for what that
- *                                      changes about the measurement.
+ *   --runner claude-cli|api            claude-cli (default) shells out to
+ *                                      `claude -p`, running on the signed-in
+ *                                      Claude subscription — no API key needed.
+ *                                      api calls the Anthropic API directly and
+ *                                      requires ANTHROPIC_API_KEY. The two do NOT
+ *                                      measure the same thing; see the Runner
+ *                                      block below before comparing across them.
  *   --dry-run                          Load fixtures and ground truth but skip API calls
  */
 
@@ -74,7 +75,9 @@ function parseArgs(): CliArgs {
     fixture: null,
     outputDir: join(BENCHMARK_DIR, 'results'),
     model: 'claude-opus-4-8',
-    runner: 'api',
+    // Default to the subscription runner: it is the path that works without a
+    // metered API key, and is what this repo actually runs on.
+    runner: 'claude-cli',
     dryRun: false,
   };
 
@@ -452,13 +455,13 @@ async function main(): Promise<void> {
   const args = parseArgs();
 
   // Validate API key early (unless dry run)
+  // Only the opt-in `api` runner needs a key; the default runs on the subscription.
   if (args.runner === 'api' && !args.dryRun && !process.env.ANTHROPIC_API_KEY) {
     console.error(
-      'Error: ANTHROPIC_API_KEY environment variable is not set.\n' +
-      '  Either set it, or use --runner claude-cli to run on the signed-in\n' +
-      '  Claude subscription instead.\n' +
+      'Error: --runner api requires ANTHROPIC_API_KEY, which is not set.\n' +
+      '  Drop the flag to use the default subscription runner instead.\n' +
       'Set it before running:\n' +
-      '  ANTHROPIC_API_KEY=sk-... npx tsx benchmarks/harsh-critic/run-benchmark.ts',
+      '  ANTHROPIC_API_KEY=sk-... npx tsx benchmarks/harsh-critic/run-benchmark.ts --runner api',
     );
     process.exit(1);
   }

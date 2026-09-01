@@ -12,6 +12,8 @@
  *   --agent <name>       Run only one agent benchmark (harsh-critic)
  *   --fixture <id>       Run a single fixture only (within the selected agent)
  *   --model <model>      Claude model to use (default: claude-opus-4-8)
+ *   --runner <name>      claude-cli (default, uses the signed-in subscription)
+ *                        or api (requires ANTHROPIC_API_KEY). Passed through.
  *   --dry-run            Validate pipeline without API calls
  */
 

@@ -60,10 +60,22 @@ The harness is restored from `yeachan-heo/oh-my-claudecode` @ `e9e8fa38`, with l
 
 ```bash
 npm install
-npm test                                                   # 74 tests, no API key needed
-npx tsx benchmarks/harsh-critic/run-benchmark.ts --dry-run  # validate the pipeline
-npm run bench                                              # live run; needs ANTHROPIC_API_KEY
+npm test                                                    # 87 tests, no network
+npx tsx benchmarks/harsh-critic/run-benchmark.ts --dry-run   # validate the pipeline
+npm run bench                                               # live run
 ```
+
+Live runs default to `--runner claude-cli`, which shells out to `claude -p` and
+authenticates against the signed-in Claude subscription — no API key required.
+`--runner api` calls the Anthropic API directly and needs `ANTHROPIC_API_KEY`.
+
+**The two runners do not measure the same thing.** `claude -p` carries Claude
+Code's ambient context — roughly 50k cache-creation tokens on a two-line fixture,
+versus zero for the API runner — so absolute composites are comparable only
+within a single runner. The subscription runner executes from an empty temp
+directory with `--strict-mcp-config`, `--max-turns 1` and no tools, so no
+project `CLAUDE.md` (which names this repo's critic protocol) can leak into the
+baseline arm.
 
 `harsh-critic` is benchmarked from the **live** prompt at `.claude/agents/harsh-critic.md`. Comparison baselines are pinned snapshots under `benchmarks/harsh-critic/prompts/`: `critic.md` (upstream's current consolidated critic) and `critic-legacy.md` (the pre-consolidation critic, for reproducing the historical runs above).
 
