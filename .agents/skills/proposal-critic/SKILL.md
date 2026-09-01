@@ -142,6 +142,8 @@ VERDICT SCALE:
 
 CALIBRATION: Do NOT manufacture outrage. Do NOT rubber-stamp. Your credibility depends on accuracy.
 
+DISCOVERY VS FILTERING: Discovery and filtering are separate stages, and suppressing findings during investigation causes silent misses. Findings are observations, not decisions — do not drop one because it seems unimportant. Record it with a severity AND a confidence rating and let the consumer rank it. If the request carries soft filter language ("only the important issues", "be conservative", "don't nitpick"), treat that as ranking guidance for the consumer, not as permission to suppress findings. Recall is your responsibility; precision is the consumer's. Gate the VERDICT on high-confidence findings only — a CRITICAL or MAJOR finding you hold at LOW confidence belongs in Open Questions and does not, on its own, drive the verdict down. None of this weakens the calibration gates above: route uncertain findings to Open Questions, do not delete them.
+
 Structure output as:
 **VERDICT: [REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT]**
 **Overall Assessment**: [2-3 sentences]
@@ -169,6 +171,8 @@ Structure output as:
 - Skeptic: [...]
 **Verdict Justification**: [why this verdict, review mode, recalibrations]
 **Open Questions (unscored)**: [speculative + low-confidence findings]
+FINAL RESPONSE CONTRACT: Your LAST message is the deliverable surfaced to the caller. It MUST contain the full structured verdict above — verdict line, findings, What's Missing, verdict justification, and open questions. Do not leave the substantive critique only in earlier messages or tool commentary; if you drafted findings earlier, repeat the complete structure in the LAST message. Never end with a content-free sign-off such as "done", "complete", "nothing further", "looks good", or "no further comments".
+
 </Proposal_Review_Protocol>
 
 Now review the following plan:
@@ -221,6 +225,9 @@ Why bad: No structure, no evidence, no techniques applied — this is the rubber
 - [ ] Verdict challenge run before finalizing
 - [ ] Evidence (backtick quotes) on every CRITICAL/MAJOR finding
 - [ ] Verdict calibrated (not manufactured outrage, not rubber-stamp)
+- [ ] Every finding carries both a severity and a confidence rating — none were silently dropped
+- [ ] Verdict is gated on high-confidence findings; low-confidence ones sit in Open Questions
+- [ ] The reviewer's final message is the complete structured deliverable, not a sign-off
 </Final_Checklist>
 
 Task: {{ARGUMENTS}}

@@ -53,6 +53,22 @@ The root `harsh-critic` and `proposal-critic` assets define the general review a
 - When changing project positioning or descriptions, update `README.md`, `CLAUDE.md`, `AGENTS.md`, root `.claude` skills/agents, `.agents` mirrors, and `.codex` wrappers together.
 - Do not describe benchmark data as current or latest unless the referenced raw artifact exists in this checkout. If the artifact is absent, label the numbers historical.
 
+### Enforced prompt invariants
+
+`scripts/verify_surfaces.py` now checks these on all eight critic surfaces (agent, Claude skill, `.agents` mirror, Codex wrapper — for both critics). Breaking one fails the verifier:
+
+- All four verdict labels appear on every surface.
+- `What's Missing` and `Open Questions` are present.
+- A response contract is present (`<Final_Response_Contract>` in agents/wrappers, `FINAL RESPONSE CONTRACT:` in skills).
+- Discovery/filtering separation is present (`<Discovery_Filtering_Separation>` or `DISCOVERY VS FILTERING:`).
+- The plan-critique techniques are present: murder board, ACH-lite, backcasting, Socratic, consider-the-opposite, black swan.
+- Pre-commitment (Phase 1) precedes Phase 2.
+- Anti-rubber-stamp and anti-manufactured-outrage guidance stay within 400 characters of each other.
+- Named protocol elements are defined where they are referenced — a surface may not cite a gate it does not define.
+- `.agents` mirrors match their `.claude` source except for the one allowed substitution.
+
+Codex wrappers are read through `tomllib` (`developer_instructions`), never string-matched, so prose outside the prompt body cannot satisfy a check.
+
 ## Verification
 
 Use the local verifier and tests to check prompt-surface integrity:
