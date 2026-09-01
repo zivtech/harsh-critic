@@ -376,3 +376,58 @@ Two of those tests failed on first write, both times because my assumption was w
 **State:** `npx tsc --noEmit` clean; 87 vitest tests pass without an API key; `--dry-run` validates the pipeline; the Python verifier and its 21 tests pass. Scores from this harness are not comparable to the historical table — the weighting changed.
 
 **Remaining:** the live re-benchmark itself. It needs `ANTHROPIC_API_KEY` and costs roughly $3-5 per full run, so it is a deliberate, separately-authorised step.
+
+---
+
+## 12. Handoff — state at park, 2026-09-01
+
+Branch `feat/upstream-critic-improvements`, six commits, **unpushed**.
+
+```
+5202aae fix(benchmarks): three parser defects found by the first live run
+76f13fa chore(benchmarks): default to the subscription runner
+8ae82c4 feat(benchmarks): add a subscription runner
+4e36ac2 fix(benchmarks): score only the dimensions a fixture can express
+f38b587 feat(benchmarks): restore the harness, fix five defects
+c0bdacd feat(critics): port upstream protocol improvements, enforce prompt contracts
+```
+
+Green: `npx tsc --noEmit`, 87 vitest tests, 21 Python tests, `scripts/verify_surfaces.py`.
+
+### 12.1 Done
+
+Steps 1-5 of §5 are complete. Prompt ports landed on all eight critic surfaces with nine enforced invariants. The harness is restored, wired to the live prompt, and runs on the Claude subscription by default (`--runner claude-cli`) — there are no API keys on this machine. Both §4 scorer defects are fixed and covered by 13 tests.
+
+### 12.2 The live run — completed, and NOT a result
+
+10/10 calls, 42 minutes, exit 0. The detection metrics were invalid: the parser discarded findings the agents demonstrably wrote. `plan-api-redesign` parsed as `REJECT` with zero critical and zero major findings while its raw output contains `## Critical Findings` C1-C3 and `## Major Findings` M1-M6 — one of which is verbatim a seeded flaw.
+
+Three parser defects found and fixed (`5202aae`). The one that matters most for interpretation: sections ended at the first following heading, which hit the arms **asymmetrically** — harsh-critic emitted `##` headers, the baseline `**bold**` headers — manufacturing a 29.7-point delta out of markdown style alone.
+
+**No delta is claimed.** It moved 29.7 → 20.5 → 15.4 across the three fixes with no evidence of convergence, and an independent count of literal finding sub-headings still disagrees with the parser on 8 of 10 outputs. The independent counter is itself unreliable (it reports 0/0 for outputs known to contain findings), so both instruments disagree and neither is currently trusted.
+
+Method note for whoever picks this up: those three fixes were made while watching the delta move. Each is defensible in isolation, but the loop was wrong — fitting the instrument to the result. Do not continue that way.
+
+### 12.3 Next step
+
+**Hand-audit the 10 captured outputs, then rebuild the parser against them.**
+
+`benchmarks/harsh-critic/scoring/__tests__/fixtures/` holds the real agent outputs as `<agent>__<fixture>.md`. Upstream's parser tests used idealised samples, which is exactly why these defects survived.
+
+1. Read each of the 10 files. Record the true count of critical findings, major findings, and What's Missing entries, plus which seeded flaw IDs each output genuinely addresses. Write it down as data, not as an assertion in code.
+2. Turn that audit into parser tests asserting those counts.
+3. Fix the parser until the tests pass — judged against the audit, never against the composite.
+4. Re-score offline with `scratchpad/rescore.ts` as a model. **Free** — raw outputs are saved, no API calls, no quota.
+5. Only then report a delta, and only with the n=1 caveat below.
+
+### 12.4 Standing caveats for any number this suite produces
+
+- **n=1 per cell.** Ten calls, one sample each, on a stochastic system. Per-fixture deltas are noise at this sample size; upstream's own README says run 3× and average.
+- **Runner-bound.** `claude -p` carries ~50k tokens of ambient context the API path does not. Compare within a runner only.
+- **Not comparable to the historical table** in `README.md` — the scorer was reweighted in `4e36ac2`.
+- **Watch `plan-clean-baseline`.** It is now the only fixture that can measure precision, and it is where our prompt is most at risk: murder board, verdict challenge and adversarial escalation all push toward finding something. Both arms flagged findings on it in the live run.
+
+### 12.5 Loose ends
+
+- `ANTHROPIC_API_KEY` was exported in the environment from an unidentified source — not any shell rc, `settings.json`, or `.envrc`, and there is no direnv. Likely Warp's environment settings or the launching shell. All keys have been deleted, so it is inert, but a dead export will produce confusing 401s if anything reaches for `--runner api`.
+- Untracked files predating this work sit in the repo root (`zivtech-meta-skills-*.md`, `companion-planner-build-plan.md`, and others). Deliberately left alone.
