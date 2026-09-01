@@ -5,3 +5,9 @@
 __pycache__/
 *.pyc
 node_modules/
+
+# Generated live-run scorecards only. The hand-written T1-T7 study artifacts in
+# the same directory stay tracked. Raw agent outputs are captured as parser
+# fixtures instead, so a stale scorecard is never mistaken for a validated result.
+benchmarks/harsh-critic/results/results*.json
+benchmarks/harsh-critic/results/report*.md

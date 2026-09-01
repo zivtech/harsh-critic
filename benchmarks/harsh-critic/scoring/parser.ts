@@ -85,8 +85,72 @@ function isHeadingLine(line: string): boolean {
   return false;
 }
 
+/**
+ * LOCAL FIX (upstream e9e8fa38): upstream tested section aliases against EVERY
+ * line, so ordinary prose that merely named a section captured it. A live run
+ * anchored `Critical Findings` to the sentence
+ *
+ *   **Mode**: Escalated to **ADVERSARIAL** after Phase 2 — multiple CRITICAL
+ *   findings, 6+ MAJOR findings, and a systemic pattern ...
+ *
+ * which appears BEFORE the real `## Critical Findings` header. The section then
+ * spanned a single prose line and every finding under the real header was lost.
+ *
+ * The trigger is our own prompt: the protocol requires the reviewer to state
+ * whether it escalated to ADVERSARIAL mode and why, so a compliant review
+ * reliably writes that sentence. A section alias must therefore only match a
+ * line that is structurally a heading.
+ */
+/**
+ * The LABEL of a heading-like line, or null if the line is ordinary prose.
+ *
+ *   `## Critical Findings (block execution)`      -> "Critical Findings (block execution)"
+ *   `**Pre-commitment Predictions**: I predict…`  -> "Pre-commitment Predictions"
+ *   `**Mode**: Escalated … CRITICAL findings …`   -> "Mode"
+ *   `Critical Findings:`                          -> "Critical Findings"
+ *   `- Evidence: the plan says …`                 -> null
+ */
+function headingLabel(line: string): string | null {
+  const trimmed = line.trim();
+  if (!trimmed || isHorizontalRule(trimmed)) return null;
+
+  const hashes = /^#{1,6}\s+(\S.*)$/.exec(trimmed);
+  if (hashes) return hashes[1].trim();
+
+  // Bold-numbered lines like "**1. Finding**" are list items, not headings.
+  if (/^\*{1,2}\s*\d+[.)]\s+/.test(trimmed)) return null;
+
+  // A bold label, whether alone on the line or followed by inline content.
+  const bold = /^\*{1,2}([^*\n]+?)\*{1,2}(\s*\([^)\n]*\))?\s*:?/.exec(trimmed);
+  if (bold) return (bold[1] + (bold[2] ?? '')).trim();
+
+  const plain = /^([A-Za-z][A-Za-z0-9'() \-/]{2,}):\s*$/.exec(trimmed);
+  if (plain) return plain[1].trim();
+
+  return null;
+}
+
+/**
+ * LOCAL FIX (upstream e9e8fa38): upstream tested section aliases against the
+ * WHOLE of every line, so ordinary prose naming a section captured it. A live
+ * run anchored `Critical Findings` to
+ *
+ *   **Mode**: Escalated to **ADVERSARIAL** after Phase 2 — multiple CRITICAL
+ *   findings, 6+ MAJOR findings, and a systemic pattern …
+ *
+ * which precedes the real `## Critical Findings` header, so the section spanned
+ * one prose line and every finding beneath the real header was lost.
+ *
+ * The trigger is our own prompt: the protocol requires the reviewer to report
+ * whether it escalated to ADVERSARIAL mode and why, so a compliant review
+ * reliably writes that sentence. Matching the heading LABEL rather than the
+ * whole line keeps `**Mode**: …` out (label "Mode") while still accepting
+ * `**Pre-commitment Predictions**: …`, which the output contract specifies.
+ */
 function lineMatchesAnyHeadingAlias(line: string, aliases: RegExp[]): boolean {
-  const normalized = normalizeHeadingLine(line);
+  const label = headingLabel(line);
+  if (label === null) return false;
+  const normalized = normalizeHeadingLine(label);
   return aliases.some((alias) => alias.test(normalized));
 }
 
@@ -97,14 +161,66 @@ function findSectionHeadingIndex(lines: string[], aliases: RegExp[]): number {
   return -1;
 }
 
+/**
+ * Structural depth of a heading. Markdown `#` headings use their own level;
+ * a bold-only line is treated as the deepest level, because models use bold
+ * lines both as top-level section headers AND as per-finding sub-headers.
+ */
+function headingLevel(line: string): number {
+  const trimmed = line.trim();
+  const hashes = /^(#{1,6})\s+\S/.exec(trimmed);
+  if (hashes) return hashes[1].length;
+  return BOLD_HEADING_LEVEL;
+}
+
+const BOLD_HEADING_LEVEL = 7;
+
+/**
+ * LOCAL FIX (upstream e9e8fa38): upstream ended a section at the FIRST
+ * subsequent heading of any kind. Current models write findings as bold
+ * sub-headings (`**C1 — title**`) underneath a markdown section header
+ * (`## Critical Findings`), and those sub-headings match the bold-heading
+ * pattern — so the section collapsed to zero lines and every CRITICAL and
+ * MAJOR finding was silently dropped. A live run produced `REJECT` verdicts
+ * with 0 critical and 0 major findings parsed, scoring both arms at the floor.
+ *
+ * A section now ends only at a heading at or above its own level, so bold
+ * sub-headings stay inside their parent section. Sections that are themselves
+ * bold headings still end at the next bold heading, preserving prior behaviour.
+ */
 function findSectionBounds(lines: string[], aliases: RegExp[]): SectionBounds | null {
   const headingIndex = findSectionHeadingIndex(lines, aliases);
   if (headingIndex === -1) return null;
 
+  const sectionLevel = headingLevel(lines[headingIndex]);
   const start = headingIndex + 1;
   let end = lines.length;
   for (let i = start; i < lines.length; i++) {
-    if (isHeadingLine(lines[i])) {
+    const line = lines[i];
+    if (isHorizontalRule(line.trim())) {
+      end = i;
+      break;
+    }
+    if (!isHeadingLine(line) && !isKnownSectionHeading(line)) continue;
+
+    // A markdown heading at or above this section's level ends it.
+    if (/^\s*#{1,6}\s+\S/.test(line) && headingLevel(line) <= sectionLevel) {
+      end = i;
+      break;
+    }
+
+    // Otherwise only a heading naming a DIFFERENT known section ends it.
+    //
+    // LOCAL FIX (upstream e9e8fa38, second pass): bold section headers and bold
+    // per-finding sub-headers are indistinguishable by depth — both are
+    // `**…**`. Ending the section at any same-depth heading therefore truncated
+    // `**Critical Findings** (block execution):` at its own first finding,
+    // `**C1 — …**`. In the live run the two arms happened to choose different
+    // markdown styles — `##` headers vs `**bold**` headers — so only the bold
+    // arm was truncated, manufacturing a 29.7-point delta out of formatting.
+    // Sections are delimited by known section NAMES; anything else bold is
+    // internal structure.
+    if (isKnownSectionHeading(line)) {
       end = i;
       break;
     }
@@ -113,14 +229,32 @@ function findSectionBounds(lines: string[], aliases: RegExp[]): SectionBounds | 
   return { start, end };
 }
 
+/** True when a line's heading label names one of the known output sections. */
+function isKnownSectionHeading(line: string): boolean {
+  const label = headingLabel(line);
+  if (label === null) return false;
+  const normalized = normalizeHeadingLine(label);
+  return ALL_SECTION_ALIASES.some((alias) => alias.test(normalized));
+}
+
 function hasSection(lines: string[], aliases: RegExp[]): boolean {
   return findSectionHeadingIndex(lines, aliases) !== -1;
+}
+
+/** A bold-only line used as a per-finding sub-heading, e.g. `**C1 — title**`. */
+function boldSubHeadingText(line: string): string | null {
+  const trimmed = line.trim();
+  if (!isHeadingLine(trimmed)) return null;
+  if (/^#{1,6}\s+\S/.test(trimmed)) return null;
+  if (isHorizontalRule(trimmed)) return null;
+  const stripped = trimmed.replace(/\*/g, '').replace(/:\s*$/, '').trim();
+  return stripped.length > 0 ? stripped : null;
 }
 
 function extractListItemsFromSection(sectionLines: string[]): string[] {
   const items: string[] = [];
   let current = '';
-  let currentKind: 'numbered' | 'bullet' | null = null;
+  let currentKind: 'numbered' | 'bullet' | 'heading' | null = null;
 
   const flush = () => {
     const item = current.trim();
@@ -136,7 +270,20 @@ function extractListItemsFromSection(sectionLines: string[]): string[] {
     const trimmed = line.trim();
 
     if (!trimmed || isHorizontalRule(trimmed)) {
+      // A finding introduced by a bold sub-heading keeps accumulating across
+      // blank lines: its evidence, impact and fix bullets belong to it, and
+      // splitting them apart scatters the keywords a match depends on.
+      if (currentKind === 'heading' && !isHorizontalRule(trimmed)) continue;
       flush();
+      continue;
+    }
+
+    // A bold sub-heading inside a section starts a new finding.
+    const subHeading = boldSubHeadingText(line);
+    if (subHeading) {
+      flush();
+      current = subHeading;
+      currentKind = 'heading';
       continue;
     }
 
@@ -158,7 +305,10 @@ function extractListItemsFromSection(sectionLines: string[]): string[] {
       // (Evidence/Why/Fix). Keep those attached to the parent finding.
       const appendToCurrent =
         current.length > 0 &&
-        (indent >= 2 || currentKind === 'numbered' || SUBFIELD_PATTERN.test(text));
+        (indent >= 2 ||
+          currentKind === 'numbered' ||
+          currentKind === 'heading' ||
+          SUBFIELD_PATTERN.test(text));
 
       if (appendToCurrent) {
         current += ' ' + text;
@@ -332,6 +482,36 @@ const MULTI_PERSPECTIVE_ALIASES = [
 ];
 const SUMMARY_ALIASES = [/\bsummary\b/];
 const JUSTIFICATION_ALIASES = [/\bjustification\b/];
+
+/**
+ * Every heading that delimits a section of the review contract. Used to end a
+ * section at the next real section rather than at its own first finding.
+ */
+const ALL_SECTION_ALIASES: RegExp[] = [
+  ...PRECOMMIT_ALIASES,
+  ...CRITICAL_ALIASES,
+  ...MAJOR_ALIASES,
+  ...MINOR_ALIASES,
+  ...MISSING_ALIASES,
+  ...MULTI_PERSPECTIVE_ALIASES,
+  // NOT SUMMARY_ALIASES / JUSTIFICATION_ALIASES. Those are bare /\bsummary\b/
+  // and /\bjustification\b/, which the legacy critic parser uses to FIND a
+  // section. As DELIMITERS they are far too loose: the finding title
+  // `**C1 — The core justification is unproven …**` matches /\bjustification\b/
+  // and truncated its own Critical Findings section to zero entries. A
+  // delimiter must name the section, not merely contain one of its words.
+  /\bverdict\s+justification\b/,
+  /\bverdict\b/,
+  /\boverall\s+assessment\b/,
+  /\bambiguity\s+risks?\b/,
+  /\bopen\s+questions?\b/,
+  /\bmurder[\s-]?board\b/,
+  /\bralplan\b/,
+  /\bcompeting\s+alternatives?\b/,
+  /\bbackcasting\b/,
+  /\bself[\s-]?audit\b/,
+  /\brealist\s+check\b/,
+];
 
 function parseVerdict(text: string): string {
   // Match: **VERDICT: REJECT** or **VERDICT: ACCEPT-WITH-RESERVATIONS**
