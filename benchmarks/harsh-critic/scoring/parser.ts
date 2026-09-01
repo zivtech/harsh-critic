@@ -251,10 +251,34 @@ function boldSubHeadingText(line: string): string | null {
   return stripped.length > 0 ? stripped : null;
 }
 
+/**
+ * A finding written as `**M1 — title.** body prose on the same line`.
+ *
+ * This shape matches no list marker and is not a bold-only heading, so before
+ * this was handled the whole line fell through to the continuation branch and,
+ * with no item open, was dropped outright. Three of the ten captured live-run
+ * outputs write every MAJOR finding this way; upstream's idealised fixtures
+ * always broke the line after the title, which is why the defect survived.
+ *
+ * Only recognised at a paragraph boundary, so a bold run mid-paragraph (e.g.
+ * `**Black-swan risk:**` inside a finding's prose) cannot split its parent.
+ */
+const BOLD_LEAD_IN_PATTERN = /^\*\*[^*\n]+?\*\*[^\S\n]*(?=\S)/;
+
+function boldLeadInText(line: string): string | null {
+  const trimmed = line.trim();
+  if (!BOLD_LEAD_IN_PATTERN.test(trimmed)) return null;
+  if (isHorizontalRule(trimmed)) return null;
+  const stripped = trimmed.replace(/\*/g, '').trim();
+  return stripped.length > 0 ? stripped : null;
+}
+
 function extractListItemsFromSection(sectionLines: string[]): string[] {
   const items: string[] = [];
   let current = '';
   let currentKind: 'numbered' | 'bullet' | 'heading' | null = null;
+  // The start of a section counts as a paragraph boundary.
+  let atParagraphStart = true;
 
   const flush = () => {
     const item = current.trim();
@@ -270,6 +294,7 @@ function extractListItemsFromSection(sectionLines: string[]): string[] {
     const trimmed = line.trim();
 
     if (!trimmed || isHorizontalRule(trimmed)) {
+      atParagraphStart = true;
       // A finding introduced by a bold sub-heading keeps accumulating across
       // blank lines: its evidence, impact and fix bullets belong to it, and
       // splitting them apart scatters the keywords a match depends on.
@@ -278,6 +303,9 @@ function extractListItemsFromSection(sectionLines: string[]): string[] {
       continue;
     }
 
+    const wasAtParagraphStart = atParagraphStart;
+    atParagraphStart = false;
+
     // A bold sub-heading inside a section starts a new finding.
     const subHeading = boldSubHeadingText(line);
     if (subHeading) {
@@ -285,6 +313,17 @@ function extractListItemsFromSection(sectionLines: string[]): string[] {
       current = subHeading;
       currentKind = 'heading';
       continue;
+    }
+
+    // Same, but with the finding's prose running on from the bold title.
+    if (wasAtParagraphStart) {
+      const leadIn = boldLeadInText(line);
+      if (leadIn) {
+        flush();
+        current = leadIn;
+        currentKind = 'heading';
+        continue;
+      }
     }
 
     const numbered = NUMBERED_ITEM_PATTERN.exec(line);

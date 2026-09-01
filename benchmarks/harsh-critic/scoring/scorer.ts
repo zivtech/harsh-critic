@@ -165,14 +165,19 @@ export function matchFindings(
   const matchedIds = new Set<string>();
   const matchedAgentIndices = new Set<number>();
 
+  // One agent finding may satisfy several seeded flaws. Critics routinely
+  // consolidate related defects into a single well-argued block -- on
+  // plan-api-redesign both arms answer SF-1, SF-2 and SF-3 inside one finding
+  // -- and a 1:1 constraint scored that as 1/3, penalising consolidation
+  // rather than measuring detection. Each flaw must still independently clear
+  // the keyword bar, so a vague finding cannot sweep the key.
   for (const gt of groundTruth.findings) {
     for (let i = 0; i < agentFindings.length; i++) {
-      if (matchedAgentIndices.has(i)) continue;
       const af = agentFindings[i];
       if (textMatchesGroundTruth(af.text, gt)) {
         matchedIds.add(gt.id);
         matchedAgentIndices.add(i);
-        break; // greedy first-match; move to next GT finding
+        break; // first finding that answers this flaw; move to the next flaw
       }
     }
   }

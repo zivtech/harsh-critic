@@ -431,3 +431,51 @@ Method note for whoever picks this up: those three fixes were made while watchin
 
 - `ANTHROPIC_API_KEY` was exported in the environment from an unidentified source — not any shell rc, `settings.json`, or `.envrc`, and there is no direnv. Likely Warp's environment settings or the launching shell. All keys have been deleted, so it is inert, but a dead export will produce confusing 401s if anything reaches for `--runner api`.
 - Untracked files predating this work sit in the repo root (`zivtech-meta-skills-*.md`, `companion-planner-build-plan.md`, and others). Deliberately left alone.
+
+---
+
+## 13. Audit pass — state at park, 2026-09-01 (supersedes §12.3)
+
+Step 6 of §12.3 is done. **Full detail: [`research/captured-output-audit.md`](captured-output-audit.md).** Read that before touching the parser, the scorer, or any number.
+
+Branch `feat/upstream-critic-improvements`. Green: `npx tsc --noEmit`, 147 vitest, 21 Python, `scripts/verify_surfaces.py`, `git diff --check`.
+
+### 13.1 What the audit changed
+
+All ten captured outputs were read by hand and cross-checked mechanically; both agreed on all 40 severity counts. The counts are now tests (`scoring/__tests__/captured-output.test.ts`), written before the parser was touched.
+
+Two more defects, on top of the three in `5202aae`:
+
+- **D4, parser:** a finding written `**M1 — title.** body on the same line` matched no list marker and was **dropped outright**. Three of ten outputs write every MAJOR that way and parsed as `MAJOR = 0` while every other count on the same file was right — 27 findings deleted silently. Upstream's tests always broke the line after the title, which is why it survived.
+- **D5, scorer:** `matchFindings` allowed one agent finding to satisfy at most one seeded flaw, so consolidating related defects into one well-argued block scored 1/3. Each flaw must still clear the keyword bar independently.
+
+**§12.2's markdown-asymmetry claim is wrong.** Header style is mixed *within* both arms (harsh-critic 3× `##` / 2× bold; baseline 2× `###` / 3× bold), and one file mixes both. That defect injected noise, not a directional bias.
+
+### 13.2 The finding that matters: the clean baseline is not clean
+
+`plan-clean-baseline` contains **six real defects**, three verified outside the plan text: Kong `rate-limiting-advanced` implements `window_type: fixed|sliding`, not the token bucket the thesis commits to; the "low probability of an incident during the 3-week grace period" is **~60%** by Poisson on the plan's own numbers; and Week 2 "soft enforcement" returns `429`, which is a rejection. Both arms found most of these independently.
+
+Its ground truth declares `findings: []`, so every correct finding scores as a false positive. **The suite's only precision instrument measures the wrong thing and penalises both arms for being right.** Three false-positive traps are also mis-specified (§3 of the audit). No precision or FPR claim can be made from this suite until the fixture is rebuilt or retired.
+
+Separately, two ground-truth entries on `plan-weak-justification` are defective: SF-3 (RabbitMQ "inertia") should be withdrawn — both arms judged the decision sound and the entry's "at-most-once default" premise is wrong — and SF-5 is unmatchable by its own keyword set despite both arms covering it.
+
+### 13.3 The delta
+
+`29.7 → 20.5 → 15.4 → 15.1 (D4) → 7.6 (D5)`. Re-scored offline, free, from the saved outputs.
+
+**Still not a result.** n=1 per cell; two of five fixtures are known-defective; the FPR column is an unmatched-finding rate. From the audit rather than the score, the residual edge is narrow and specific: harsh-critic answers SF-2/SF-4 head-on on `plan-auth-migration` where the baseline is adjacent, and uses the ACH vocabulary SF-3 keys on. Expect modest, not the 48% the historical docs implied.
+
+### 13.4 Next step
+
+**Fix the fixtures, not the instrument.** In order:
+
+1. Rebuild `plan-clean-baseline` so it is actually clean — remove the Kong/token-bucket contradiction, the 429 "soft enforcement" incoherence, the 95%-on-N=4 metric, the non-like-for-like latency comparison — or retire it and write a new precision fixture. Until then it is measuring noise.
+2. Withdraw SF-3 on `plan-weak-justification`; widen SF-5's keywords to the vocabulary models actually use ("no cheaper alternative", "alternatives analysis", "false dichotomy").
+3. Re-audit the false-positive traps against the plan text; at least three assert soundness that does not survive checking.
+4. Only then re-run — 3× per cell, per upstream's README — and only then report a delta.
+
+Re-scoring stays free while the raw outputs are saved. Do not spend quota re-running against known-broken fixtures.
+
+### 13.5 Loose ends
+
+- The dead `ANTHROPIC_API_KEY` export (§12.5) is unchanged and still inert.
