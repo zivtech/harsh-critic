@@ -3,6 +3,7 @@
  *
  * Usage:
  *   ANTHROPIC_API_KEY=sk-... npx tsx benchmarks/harsh-critic/run-benchmark.ts [options]
+ *   npx tsx benchmarks/harsh-critic/run-benchmark.ts --runner claude-cli [options]
  *
  * Options:
  *   --agent harsh-critic|critic|critic-legacy|both
@@ -13,19 +14,31 @@
  *   --fixture <fixture-id>             Run a single fixture only
  *   --output-dir <path>                Where to write results (default: benchmarks/harsh-critic/results)
  *   --model <model>                    Claude model to use (default: claude-opus-4-8)
+ *   --runner api|claude-cli            api (default) calls the Anthropic API and
+ *                                      needs ANTHROPIC_API_KEY. claude-cli shells
+ *                                      out to `claude -p`, which runs on the
+ *                                      signed-in Claude subscription instead.
+ *                                      See the Runner block below for what that
+ *                                      changes about the measurement.
  *   --dry-run                          Load fixtures and ground truth but skip API calls
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { execFile } from 'child_process';
 import {
   readFileSync,
   writeFileSync,
   mkdirSync,
+  mkdtempSync,
   existsSync,
   readdirSync,
 } from 'fs';
+import { tmpdir } from 'os';
 import { join, dirname, resolve } from 'path';
+import { promisify } from 'util';
 import { fileURLToPath } from 'url';
+
+const execFileAsync = promisify(execFile);
 
 import type { AgentType, FixtureResult, GroundTruth } from './scoring/types.ts';
 import { parseAgentOutput } from './scoring/parser.ts';
@@ -47,6 +60,7 @@ const REPO_ROOT = resolve(__dirname, '..', '..');
 
 interface CliArgs {
   agent: 'harsh-critic' | 'critic' | 'critic-legacy' | 'both';
+  runner: Runner;
   fixture: string | null;
   outputDir: string;
   model: string;
@@ -60,12 +74,22 @@ function parseArgs(): CliArgs {
     fixture: null,
     outputDir: join(BENCHMARK_DIR, 'results'),
     model: 'claude-opus-4-8',
+    runner: 'api',
     dryRun: false,
   };
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     switch (arg) {
+      case '--runner': {
+        const val = args[++i];
+        if (val !== 'api' && val !== 'claude-cli') {
+          console.error(`Error: --runner must be api or claude-cli (got "${val}")`);
+          process.exit(1);
+        }
+        result.runner = val;
+        break;
+      }
       case '--agent': {
         const val = args[++i];
         if (
@@ -217,6 +241,99 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// ============================================================
+// Runners
+//
+// LOCAL ADDITION (not upstream): `claude-cli` drives the benchmark through the
+// Claude Code CLI, which authenticates against the signed-in subscription
+// rather than a metered API key.
+//
+// It does NOT measure the same thing as the `api` runner, and the difference is
+// not small. `claude -p` carries Claude Code's ambient context — tool schemas,
+// settings, and any CLAUDE.md in scope. Measured on a two-line fixture with
+// --system-prompt replacing the agent prompt: 49,696 cache-creation tokens of
+// context that the API runner does not send at all.
+//
+// Two consequences:
+//   1. Absolute composites are not comparable across runners. Compare within a
+//      single runner only.
+//   2. This repo's own CLAUDE.md documents the critic protocol by name (murder
+//      board, backcasting, ACH-lite). If it were in scope it would leak protocol
+//      knowledge into the BASELINE arm, inflating it. That biases the measured
+//      delta downward — against our prompt — which is the safe direction, but it
+//      is avoidable, so the runner executes from an empty temp directory with
+//      --strict-mcp-config and no tools.
+// ============================================================
+
+type Runner = 'api' | 'claude-cli';
+
+/** Empty cwd so no project CLAUDE.md, skills, or agents load into the run. */
+let isolatedCwd: string | null = null;
+function getIsolatedCwd(): string {
+  if (isolatedCwd === null) {
+    isolatedCwd = mkdtempSync(join(tmpdir(), 'harsh-critic-bench-'));
+  }
+  return isolatedCwd;
+}
+
+const CLI_DISALLOWED_TOOLS = [
+  'Bash', 'Edit', 'Write', 'Read', 'Grep', 'Glob',
+  'WebFetch', 'WebSearch', 'Task', 'Agent', 'NotebookEdit',
+];
+
+interface CliResult {
+  text: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  apiDurationMs?: number;
+  notionalCostUsd?: number;
+}
+
+async function callClaudeCli(
+  systemPrompt: string,
+  userMessage: string,
+  model: string,
+): Promise<CliResult> {
+  const { ANTHROPIC_API_KEY: _dropped, ...env } = process.env;
+
+  const { stdout } = await execFileAsync(
+    'claude',
+    [
+      '-p', userMessage,
+      '--system-prompt', systemPrompt,
+      '--model', model,
+      '--output-format', 'json',
+      '--max-turns', '1',
+      '--strict-mcp-config',
+      '--disallowedTools', ...CLI_DISALLOWED_TOOLS,
+    ],
+    {
+      cwd: getIsolatedCwd(),
+      env,
+      maxBuffer: 64 * 1024 * 1024,
+      timeout: 15 * 60 * 1000,
+    },
+  );
+
+  const payload = JSON.parse(stdout);
+  if (payload.is_error) {
+    throw new Error(`claude -p reported an error: ${payload.subtype ?? 'unknown'}`);
+  }
+  if (typeof payload.result !== 'string' || payload.result.length === 0) {
+    throw new Error('claude -p returned no result text');
+  }
+
+  return {
+    text: payload.result,
+    inputTokens: payload.usage?.input_tokens,
+    outputTokens: payload.usage?.output_tokens,
+    apiDurationMs: payload.duration_api_ms,
+    // Informational on a subscription: what the same tokens would have cost via
+    // the API. Subscription usage draws on plan quota, not this figure.
+    notionalCostUsd: payload.total_cost_usd,
+  };
+}
+
 async function callClaude(
   client: Anthropic,
   systemPrompt: string,
@@ -335,9 +452,11 @@ async function main(): Promise<void> {
   const args = parseArgs();
 
   // Validate API key early (unless dry run)
-  if (!args.dryRun && !process.env.ANTHROPIC_API_KEY) {
+  if (args.runner === 'api' && !args.dryRun && !process.env.ANTHROPIC_API_KEY) {
     console.error(
       'Error: ANTHROPIC_API_KEY environment variable is not set.\n' +
+      '  Either set it, or use --runner claude-cli to run on the signed-in\n' +
+      '  Claude subscription instead.\n' +
       'Set it before running:\n' +
       '  ANTHROPIC_API_KEY=sk-... npx tsx benchmarks/harsh-critic/run-benchmark.ts',
     );
@@ -404,6 +523,16 @@ async function main(): Promise<void> {
     ` (${agentsToRun.join(', ')} x ${fixtures.length} fixture(s))...\n`,
   );
 
+  let notionalCostUsd = 0;
+
+  if (args.runner === 'claude-cli') {
+    console.log(
+      'Runner: claude-cli (signed-in subscription). Absolute scores are NOT\n' +
+        '  comparable with the api runner — see the Runner block in this file.\n' +
+        `  Isolated working directory: ${getIsolatedCwd()}\n`,
+    );
+  }
+
   for (const agentType of agentsToRun) {
     const systemPrompt = agentPrompts[agentType];
     if (!systemPrompt) {
@@ -416,19 +545,26 @@ async function main(): Promise<void> {
       process.stdout.write(`Running ${label}... `);
       const startMs = Date.now();
 
+      const userMessage = `Review the following work:\n\n${fixture.content}`;
+
       let rawOutput: string;
+      let cliTelemetry: CliResult | null = null;
       try {
-        rawOutput = await callClaude(
-          client,
-          systemPrompt,
-          `Review the following work:\n\n${fixture.content}`,
-          args.model,
-        );
+        if (args.runner === 'claude-cli') {
+          cliTelemetry = await callClaudeCli(systemPrompt, userMessage, args.model);
+          rawOutput = cliTelemetry.text;
+        } else {
+          rawOutput = await callClaude(client, systemPrompt, userMessage, args.model);
+        }
       } catch (err) {
         const elapsedS = ((Date.now() - startMs) / 1000).toFixed(1);
         console.log(`FAILED (${elapsedS}s)`);
-        console.error(`  Error calling Claude API: ${err}`);
+        console.error(`  Error calling Claude (${args.runner}): ${err}`);
         process.exit(1);
+      }
+
+      if (cliTelemetry) {
+        notionalCostUsd += cliTelemetry.notionalCostUsd ?? 0;
       }
 
       const elapsedS = ((Date.now() - startMs) / 1000).toFixed(1);
@@ -520,6 +656,13 @@ async function main(): Promise<void> {
       console.log('=== Aggregate Scores ===\n');
       console.log('  Comparison unavailable — one arm produced no results.\n');
     }
+  }
+
+  if (args.runner === 'claude-cli') {
+    console.log(
+      `  Notional API-equivalent cost: $${notionalCostUsd.toFixed(2)} ` +
+        '(informational — subscription runs draw on plan quota, not this figure)\n',
+    );
   }
 
   console.log('Benchmark complete.\n');
