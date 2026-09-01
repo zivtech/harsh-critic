@@ -67,7 +67,12 @@ npm run bench                                              # live run; needs ANT
 
 `harsh-critic` is benchmarked from the **live** prompt at `.claude/agents/harsh-critic.md`. Comparison baselines are pinned snapshots under `benchmarks/harsh-critic/prompts/`: `critic.md` (upstream's current consolidated critic) and `critic-legacy.md` (the pre-consolidation critic, for reproducing the historical runs above).
 
-Known scorer defects are documented in `research/upstream-omcc-critic-review.md` §4. Two remain unfixed and affect any live run — a perfect clean-baseline scores 0.35, and valid findings outside the answer key count as false positives. Fix those before trusting new numbers.
+Five scorer defects were found and fixed; all are documented in `research/upstream-omcc-critic-review.md` §4 and §9. Two changed how scores are computed:
+
+- **Composite renormalisation.** A dimension a fixture cannot express is now excluded rather than scored zero. Previously a perfect clean-baseline run — correct `ACCEPT`, no spurious findings, full protocol compliance — scored 0.35/1.00 and was averaged into the aggregate. It now scores 1.00.
+- **False positives are only claimed where they can be shown.** The old `falsePositiveRate` counted any finding that missed the answer key, so surfacing real unlisted issues lowered the score. That quantity is now `unmatchedFindingRate`, reported as a diagnostic and weighted nowhere. `falsePositiveRate` is computed only on clean baselines, where the fixture is built to contain no genuine issues, and honours an `allowedObservations` list so a fair minor observation is not charged as a hallucination.
+
+Because the weighting changed, scores from this harness are not comparable to the historical table above.
 
 ## Plan Critique Research
 

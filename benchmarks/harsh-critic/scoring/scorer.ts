@@ -5,6 +5,7 @@
 
 import type {
   BenchmarkScores,
+  DimensionApplicability,
   FixtureResult,
   GroundTruth,
   GroundTruthFinding,
@@ -284,26 +285,107 @@ function computeEvidenceRate(parsed: ParsedAgentOutput): number {
 }
 
 // ============================================================
+// Clean-baseline false positives
+// ============================================================
+
+/**
+ * On a clean baseline, count findings that match neither ground truth (there is
+ * none) nor an `allowedObservations` entry. The allowance exists so a critic
+ * that draws a fair minor observation about a deliberately solid fixture is not
+ * charged as if it hallucinated.
+ */
+function computeCleanBaselineFalsePositiveRate(
+  spuriousTexts: string[],
+  groundTruth: GroundTruth,
+): number {
+  if (spuriousTexts.length === 0) return 0;
+
+  const allowed = groundTruth.allowedObservations ?? [];
+  if (allowed.length === 0) return 1;
+
+  const disallowed = spuriousTexts.filter(
+    (text) =>
+      !allowed.some(
+        (observation) =>
+          countKeywordMatches(text, observation.keywords) >=
+          requiredKeywordMatches(observation.keywords),
+      ),
+  );
+  return disallowed.length / spuriousTexts.length;
+}
+
+// ============================================================
 // Composite score
 // ============================================================
 
-function computeComposite(scores: Omit<BenchmarkScores, 'compositeScore'>): number {
+/**
+ * Weighted mean over APPLICABLE dimensions only, renormalised to sum to 1.
+ *
+ * LOCAL FIX (upstream e9e8fa38): upstream summed every dimension against fixed
+ * weights, so a dimension the fixture could not express scored 0 rather than
+ * being excluded. Two consequences it produced:
+ *
+ *   - A perfect clean-baseline run scored 0.35/1.00 (no ground truth means
+ *     truePositiveRate, missingCoverage, perspectiveCoverage and evidenceRate
+ *     are all structurally zero), then got averaged into the aggregate.
+ *   - Any fixture set without `perspective`-category ground truth silently
+ *     forfeited 10% of every score.
+ *
+ * `unmatchedFindingRate` is deliberately absent: it cannot distinguish a
+ * spurious finding from a real one the fixture author did not seed.
+ */
+function computeComposite(
+  scores: Omit<BenchmarkScores, 'compositeScore'>,
+): number {
   const w = SCORING_WEIGHTS;
+  const { applicability } = scores;
 
   const processComplianceScore =
     [scores.hasPreCommitment, scores.hasMultiPerspective, scores.hasGapAnalysis].filter(
       Boolean,
     ).length / 3;
 
-  return (
-    w.truePositiveRate * scores.truePositiveRate +
-    w.falseNegativeRate * (1 - scores.falseNegativeRate) +
-    w.falsePositiveRate * (1 - scores.falsePositiveRate) +
-    w.missingCoverage * scores.missingCoverage +
-    w.perspectiveCoverage * scores.perspectiveCoverage +
-    w.evidenceRate * scores.evidenceRate +
-    w.processCompliance * processComplianceScore
-  );
+  const dimensions: Array<{ weight: number; value: number; applicable: boolean }> = [
+    {
+      weight: w.truePositiveRate,
+      value: scores.truePositiveRate,
+      applicable: applicability.detection,
+    },
+    {
+      weight: w.falseNegativeRate,
+      value: 1 - scores.falseNegativeRate,
+      applicable: applicability.detection,
+    },
+    {
+      weight: w.falsePositiveRate,
+      value: 1 - (scores.falsePositiveRate ?? 0),
+      applicable: applicability.falsePositiveRate && scores.falsePositiveRate !== null,
+    },
+    {
+      weight: w.missingCoverage,
+      value: scores.missingCoverage,
+      applicable: applicability.missingCoverage,
+    },
+    {
+      weight: w.perspectiveCoverage,
+      value: scores.perspectiveCoverage,
+      applicable: applicability.perspectiveCoverage,
+    },
+    {
+      weight: w.evidenceRate,
+      value: scores.evidenceRate,
+      applicable: applicability.evidenceRate,
+    },
+    // Process compliance is always expressible: any output either follows the
+    // protocol's structure or does not.
+    { weight: w.processCompliance, value: processComplianceScore, applicable: true },
+  ];
+
+  const applicable = dimensions.filter((d) => d.applicable);
+  const totalWeight = applicable.reduce((sum, d) => sum + d.weight, 0);
+  if (totalWeight === 0) return 0;
+
+  return applicable.reduce((sum, d) => sum + d.weight * d.value, 0) / totalWeight;
 }
 
 // ============================================================
@@ -325,8 +407,18 @@ export function scoreFixture(
   // Core detection
   const truePositiveRate = totalGt > 0 ? matchedIds.length / totalGt : 0;
   const falseNegativeRate = totalGt > 0 ? missedIds.length / totalGt : 0;
-  const falsePositiveRate =
+
+  // Diagnostic only — an unmatched finding may be spurious OR a real issue the
+  // fixture author never seeded. The scorer cannot tell which.
+  const unmatchedFindingRate =
     totalAgentFindings > 0 ? spuriousTexts.length / totalAgentFindings : 0;
+
+  // A clean baseline is built to contain no genuine issues, so anything it
+  // flags beyond its allowedObservations really is a false positive. That is
+  // the only case where the answer key is authoritative about absence.
+  const falsePositiveRate = groundTruth.isCleanBaseline
+    ? computeCleanBaselineFalsePositiveRate(spuriousTexts, groundTruth)
+    : null;
 
   // Severity accuracy
   const severityAccuracy = computeSeverityAccuracy(parsed, groundTruth, matchedIds);
@@ -358,8 +450,18 @@ export function scoreFixture(
   const hasMultiPerspective = parsed.hasMultiPerspective;
   const hasGapAnalysis = parsed.hasGapAnalysis;
 
+  const applicability: DimensionApplicability = {
+    detection: totalGt > 0,
+    missingCoverage: missingGt.length > 0,
+    perspectiveCoverage: perspectiveGt.length > 0,
+    evidenceRate:
+      parsed.criticalFindings.length + parsed.majorFindings.length > 0,
+    falsePositiveRate: groundTruth.isCleanBaseline,
+  };
+
   const partial = {
     truePositiveRate,
+    unmatchedFindingRate,
     falsePositiveRate,
     falseNegativeRate,
     severityAccuracy,
@@ -369,6 +471,7 @@ export function scoreFixture(
     hasPreCommitment,
     hasMultiPerspective,
     hasGapAnalysis,
+    applicability,
   };
 
   return { ...partial, compositeScore: computeComposite(partial) };
@@ -388,7 +491,7 @@ type BooleanScoreKey = {
 
 const NUMERIC_KEYS: NumericScoreKey[] = [
   'truePositiveRate',
-  'falsePositiveRate',
+  'unmatchedFindingRate',
   'falseNegativeRate',
   'severityAccuracy',
   'missingCoverage',
@@ -410,7 +513,8 @@ export function aggregateScores(results: FixtureResult[]): BenchmarkScores {
   if (results.length === 0) {
     return {
       truePositiveRate: 0,
-      falsePositiveRate: 0,
+      unmatchedFindingRate: 0,
+      falsePositiveRate: null,
       falseNegativeRate: 0,
       severityAccuracy: 0,
       missingCoverage: 0,
@@ -419,6 +523,13 @@ export function aggregateScores(results: FixtureResult[]): BenchmarkScores {
       hasPreCommitment: false,
       hasMultiPerspective: false,
       hasGapAnalysis: false,
+      applicability: {
+        detection: false,
+        missingCoverage: false,
+        perspectiveCoverage: false,
+        evidenceRate: false,
+        falsePositiveRate: false,
+      },
       compositeScore: 0,
     };
   }
@@ -436,6 +547,30 @@ export function aggregateScores(results: FixtureResult[]): BenchmarkScores {
     const trueCount = results.filter((r) => r.scores[key] as boolean).length;
     (aggregate as unknown as Record<string, boolean>)[key] = trueCount > n / 2;
   }
+
+  // Average the true false-positive rate over the fixtures that can express it
+  // (clean baselines). Averaging it as 0 elsewhere would dilute the only
+  // precision signal the suite has.
+  const fprValues = results
+    .map((r) => r.scores.falsePositiveRate)
+    .filter((value): value is number => value !== null);
+  aggregate.falsePositiveRate =
+    fprValues.length > 0
+      ? fprValues.reduce((sum, value) => sum + value, 0) / fprValues.length
+      : null;
+
+  // A dimension is applicable in aggregate if any fixture could express it.
+  aggregate.applicability = {
+    detection: results.some((r) => r.scores.applicability.detection),
+    missingCoverage: results.some((r) => r.scores.applicability.missingCoverage),
+    perspectiveCoverage: results.some(
+      (r) => r.scores.applicability.perspectiveCoverage,
+    ),
+    evidenceRate: results.some((r) => r.scores.applicability.evidenceRate),
+    falsePositiveRate: results.some(
+      (r) => r.scores.applicability.falsePositiveRate,
+    ),
+  };
 
   return aggregate;
 }

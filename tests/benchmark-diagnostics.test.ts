@@ -39,7 +39,8 @@ import type {
 
 const scores: BenchmarkScores = {
   truePositiveRate: 1,
-  falsePositiveRate: 0,
+  unmatchedFindingRate: 0,
+  falsePositiveRate: null,
   falseNegativeRate: 0,
   severityAccuracy: 1,
   missingCoverage: 1,
@@ -48,6 +49,13 @@ const scores: BenchmarkScores = {
   hasPreCommitment: true,
   hasMultiPerspective: true,
   hasGapAnalysis: true,
+  applicability: {
+    detection: true,
+    missingCoverage: true,
+    perspectiveCoverage: true,
+    evidenceRate: true,
+    falsePositiveRate: false,
+  },
   compositeScore: 1,
 };
 

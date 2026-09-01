@@ -76,6 +76,20 @@ export interface GroundTruth {
   findings: GroundTruthFinding[];
   /** Whether this is a clean baseline (for false-positive testing) */
   isCleanBaseline: boolean;
+  /**
+   * Observations a clean baseline may legitimately draw without being charged a
+   * false positive. Without this, a critic that makes a fair minor observation
+   * on a deliberately solid fixture is scored as if it hallucinated — the same
+   * perverse incentive `unmatchedFindingRate` was demoted for.
+   */
+  allowedObservations?: AllowedObservation[];
+}
+
+/** A defensible observation on a clean baseline. Matched like a ground-truth finding. */
+export interface AllowedObservation {
+  id: string;
+  summary: string;
+  keywords: string[];
 }
 
 // ============================================================
@@ -135,8 +149,27 @@ export interface BenchmarkScores {
   // Core detection metrics (0-1 scale)
   /** Findings that match ground truth / total ground truth */
   truePositiveRate: number;
-  /** Findings that don't match any ground truth / total agent findings */
-  falsePositiveRate: number;
+  /**
+   * Agent findings that matched no ground-truth entry / total agent findings.
+   *
+   * LOCAL FIX (upstream e9e8fa38): upstream called this `falsePositiveRate` and
+   * weighted it on every fixture. It does not measure correctness — the scorer
+   * has no way to judge whether an unmatched finding is wrong, only that it is
+   * not in the answer key. Weighting it penalised finding real issues the
+   * fixture author did not seed: adding two genuine, evidence-cited findings
+   * moved the old metric from 0.00 to 0.67 and dropped the composite from 0.700
+   * to 0.633. It is now a DIAGNOSTIC, reported everywhere and weighted nowhere.
+   */
+  unmatchedFindingRate: number;
+  /**
+   * True false-positive rate, and `null` where it cannot be determined.
+   *
+   * Only a clean baseline licenses the claim that an unmatched finding is
+   * false: the fixture is constructed to contain no genuine issues, so anything
+   * flagged beyond its `allowedObservations` really is a false positive. On
+   * seeded fixtures this is `null` and carries no weight.
+   */
+  falsePositiveRate: number | null;
   /** Ground truth items not found / total ground truth */
   falseNegativeRate: number;
 
@@ -162,9 +195,40 @@ export interface BenchmarkScores {
   /** "What's Missing" section present and non-empty */
   hasGapAnalysis: boolean;
 
+  /**
+   * Which dimensions the fixture could actually express.
+   *
+   * LOCAL FIX (upstream e9e8fa38): upstream's composite treated an
+   * inapplicable dimension as a zero score. A clean baseline has no ground
+   * truth, so truePositiveRate, missingCoverage, perspectiveCoverage and
+   * evidenceRate were all structurally pinned to 0 — a PERFECT clean-baseline
+   * run (correct ACCEPT, no spurious findings, full process compliance) scored
+   * 0.35/1.00 and was then averaged into the aggregate, dragging both arms
+   * down. The composite now renormalises over applicable dimensions only.
+   */
+  applicability: DimensionApplicability;
+
   // Aggregate
-  /** Weighted combination of all metrics */
+  /** Weighted combination of the APPLICABLE metrics, renormalised to sum to 1 */
   compositeScore: number;
+}
+
+/**
+ * A dimension is applicable when the fixture and the agent output can express
+ * it. Inapplicable dimensions are excluded from the composite rather than
+ * scored zero.
+ */
+export interface DimensionApplicability {
+  /** Ground truth has at least one finding (truePositiveRate, falseNegativeRate) */
+  detection: boolean;
+  /** Ground truth has at least one `missing`-category finding */
+  missingCoverage: boolean;
+  /** Ground truth has at least one `perspective`-category finding */
+  perspectiveCoverage: boolean;
+  /** The agent produced at least one CRITICAL or MAJOR finding to cite evidence for */
+  evidenceRate: boolean;
+  /** The fixture is a clean baseline, so unmatched findings are genuinely false */
+  falsePositiveRate: boolean;
 }
 
 /**
@@ -225,10 +289,15 @@ export interface BenchmarkReport {
  * Weights for composite score calculation.
  * Sum to 1.0.
  */
+/**
+ * Nominal weights. Only APPLICABLE dimensions enter the composite, and their
+ * weights are renormalised to sum to 1 — so these are ratios between dimensions
+ * rather than fixed shares. `unmatchedFindingRate` has no weight by design.
+ */
 export const SCORING_WEIGHTS = {
   truePositiveRate: 0.25,
   falseNegativeRate: 0.15,   // inverted: lower is better
-  falsePositiveRate: 0.10,   // inverted: lower is better
+  falsePositiveRate: 0.10,   // inverted: lower is better; clean baselines only
   missingCoverage: 0.20,     // key differentiator
   perspectiveCoverage: 0.10,
   evidenceRate: 0.10,

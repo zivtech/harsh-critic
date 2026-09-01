@@ -60,7 +60,8 @@ function makeFixtureResult(overrides: Partial<FixtureResult> = {}): FixtureResul
     parsedOutput: makeParsedOutput(),
     scores: {
       truePositiveRate: 0.5,
-      falsePositiveRate: 0.2,
+      unmatchedFindingRate: 0.2,
+      falsePositiveRate: null,
       falseNegativeRate: 0.5,
       severityAccuracy: 0.8,
       missingCoverage: 0.6,
@@ -69,6 +70,13 @@ function makeFixtureResult(overrides: Partial<FixtureResult> = {}): FixtureResul
       hasPreCommitment: true,
       hasMultiPerspective: true,
       hasGapAnalysis: true,
+      applicability: {
+        detection: true,
+        missingCoverage: true,
+        perspectiveCoverage: true,
+        evidenceRate: true,
+        falsePositiveRate: false,
+      },
       compositeScore: 0.65,
     },
     matchedFindings: ['F1'],

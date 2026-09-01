@@ -17,6 +17,12 @@ export interface GroundTruthFinding {
   explanation: string;
 }
 
+export interface AllowedObservation {
+  id: string;
+  summary: string;
+  keywords: string[];
+}
+
 export interface GroundTruth {
   fixtureId: string;
   fixturePath: string;
@@ -24,6 +30,7 @@ export interface GroundTruth {
   expectedVerdict?: string;
   findings: GroundTruthFinding[];
   isCleanBaseline: boolean;
+  allowedObservations?: AllowedObservation[];
 }
 
 export interface ParsedFinding {
@@ -50,9 +57,25 @@ export interface ParsedAgentOutput {
   rawOutput: string;
 }
 
+/**
+ * Structural mirror of the canonical BenchmarkScores in
+ * benchmarks/harsh-critic/scoring/types.ts. Keep the two in step — the shared
+ * scorer delegates to the canonical one and returns its result directly.
+ */
+export interface DimensionApplicability {
+  detection: boolean;
+  missingCoverage: boolean;
+  perspectiveCoverage: boolean;
+  evidenceRate: boolean;
+  falsePositiveRate: boolean;
+}
+
 export interface BenchmarkScores {
   truePositiveRate: number;
-  falsePositiveRate: number;
+  /** Diagnostic: unmatched findings / total findings. Carries no weight. */
+  unmatchedFindingRate: number;
+  /** True false positives; `null` where the fixture cannot license the claim. */
+  falsePositiveRate: number | null;
   falseNegativeRate: number;
   severityAccuracy: number;
   missingCoverage: number;
@@ -61,6 +84,7 @@ export interface BenchmarkScores {
   hasPreCommitment: boolean;
   hasMultiPerspective: boolean;
   hasGapAnalysis: boolean;
+  applicability: DimensionApplicability;
   compositeScore: number;
 }
 

@@ -123,7 +123,8 @@ function bool(value: boolean): string {
 const METRIC_LABELS: Partial<Record<keyof BenchmarkScores, string>> = {
   truePositiveRate: 'True Positive Rate',
   falseNegativeRate: 'False Negative Rate',
-  falsePositiveRate: 'False Positive Rate',
+  unmatchedFindingRate: 'Unmatched Finding Rate (diagnostic)',
+  falsePositiveRate: 'False Positive Rate (clean baselines)',
   severityAccuracy: 'Severity Accuracy',
   missingCoverage: 'Missing Coverage',
   perspectiveCoverage: 'Perspective Coverage',
@@ -228,7 +229,8 @@ export function generateMarkdownReport(report: BenchmarkReport): string {
       lines.push(
         `- **${agentType}**: composite=${pct(s.compositeScore)} ` +
           `tp=${pct(s.truePositiveRate)} fn=${pct(s.falseNegativeRate)} ` +
-          `fp=${pct(s.falsePositiveRate)}`,
+          `unmatched=${pct(s.unmatchedFindingRate)} ` +
+          `fp=${s.falsePositiveRate === null ? 'n/a' : pct(s.falsePositiveRate)}`,
       );
       lines.push(
         `  - Matched: ${result.matchedFindings.length}/${result.matchedFindings.length + result.missedFindings.length} findings`,

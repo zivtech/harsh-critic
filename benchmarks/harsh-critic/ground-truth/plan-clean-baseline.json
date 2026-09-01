@@ -5,6 +5,40 @@
   "expectedVerdict": "ACCEPT",
   "isCleanBaseline": true,
   "findings": [],
+  "allowedObservations": [
+    {
+      "id": "ALLOW-1",
+      "summary": "Redis serves both gateway caching and rate-limit state",
+      "keywords": [
+        "Redis",
+        "cache",
+        "rate limit",
+        "shared"
+      ]
+    },
+    {
+      "id": "ALLOW-2",
+      "summary": "Three-week gradual rollout leaves the API unprotected longer",
+      "keywords": [
+        "three-week",
+        "3-week",
+        "rollout",
+        "unprotected",
+        "gradual"
+      ]
+    },
+    {
+      "id": "ALLOW-3",
+      "summary": "Five-minute tier cache means tier changes take up to 5 minutes to apply",
+      "keywords": [
+        "5-minute",
+        "five-minute",
+        "TTL",
+        "tier",
+        "cache"
+      ]
+    }
+  ],
   "x-expectedVerdictRange": [
     "ACCEPT",
     "ACCEPT-WITH-RESERVATIONS"

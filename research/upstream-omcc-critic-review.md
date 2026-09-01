@@ -324,3 +324,55 @@ Imported from upstream `e9e8fa38` and wired to this repo. Every local change car
 **State:** `npx tsc --noEmit` clean, 74 vitest tests pass without an API key, `--dry-run` validates the full pipeline, and the Python verifier plus its 21 tests still pass.
 
 **Still open:** the two §4 scorer defects. A live run before those are fixed would reproduce the same misleading numbers, so the re-benchmark is deliberately not started.
+
+---
+
+## 11. Scorer defects fixed
+
+Both §4 defects traced to one root cause: the composite treated *"this fixture cannot express this dimension"* as *"this agent scored zero on this dimension."*
+
+### 11.1 Applicability-aware composite
+
+`computeComposite` now takes a weighted mean over **applicable** dimensions and renormalises the weights to sum to 1. A dimension is applicable when the fixture and the output can express it:
+
+| Dimension | Applicable when |
+|---|---|
+| truePositiveRate, falseNegativeRate | ground truth has at least one finding |
+| missingCoverage | ground truth has a `missing`-category finding |
+| perspectiveCoverage | ground truth has a `perspective`-category finding |
+| evidenceRate | the agent produced at least one CRITICAL/MAJOR finding to cite |
+| falsePositiveRate | the fixture is a clean baseline |
+| processCompliance | always — any output either follows the structure or does not |
+
+This fixed a second, quieter problem: our ground truth has no `perspective`-category findings, so under the old scorer **every** fixture forfeited 10% of composite silently.
+
+### 11.2 False positives are only claimed where they can be shown
+
+The old `falsePositiveRate` counted any finding that failed to keyword-match the key, without assessing correctness — so a better reviewer scored worse. It is now split:
+
+- **`unmatchedFindingRate`** — the same ratio, named honestly. Always computed, always reported, weighted nowhere.
+- **`falsePositiveRate`** — `null` except on clean baselines, which are constructed to contain no genuine issues. That is the only place the key is authoritative about *absence*.
+
+Clean baselines also gained an `allowedObservations` list, seeded from the `minor_observations_acceptable` entries our fixtures already carried, so a critic that draws a fair minor observation about a deliberately solid plan is not charged as if it hallucinated. Aggregation averages the true rate only over fixtures that can express it — averaging seeded fixtures in as 0 would dilute the suite's only precision signal.
+
+### 11.3 Measured before and after
+
+| Scenario | Before | After |
+|---|---:|---:|
+| Perfect clean-baseline run (correct ACCEPT, nothing flagged, full compliance) | 0.350 | **1.000** |
+| Clean baseline, 3 fabricated findings | — | **0.667** (FPR 1.0) |
+| Clean baseline, 1 allowed observation | — | **1.000** (FPR 0.0) |
+| Seeded fixture, answer-key finding only | 0.700 | **1.000** |
+| Same, plus 2 genuine unlisted findings | 0.633 | **1.000** (unmatched 0.67) |
+
+Finding more real issues no longer costs score, and the clean baselines can finally measure the precision they were built to measure.
+
+### 11.4 Coverage
+
+13 tests in `scoring/__tests__/scoring-fixes.test.ts` pin this: the before/after numbers above, that fabricated findings on a clean baseline still hurt, that `falsePositiveRate` stays `null` on seeded fixtures, that renormalised weights reach exactly 1.0 on a perfect applicable run, that the composite bottoms at 0, and that aggregation neither dilutes nor invents a precision signal.
+
+Two of those tests failed on first write, both times because my assumption was wrong and the scorer was right — a silent run on a clean baseline scores 0.5 (perfect precision, zero protocol compliance), and a finding that cites evidence makes `evidenceRate` applicable. Recorded here because it is the kind of thing a green suite hides.
+
+**State:** `npx tsc --noEmit` clean; 87 vitest tests pass without an API key; `--dry-run` validates the pipeline; the Python verifier and its 21 tests pass. Scores from this harness are not comparable to the historical table — the weighting changed.
+
+**Remaining:** the live re-benchmark itself. It needs `ANTHROPIC_API_KEY` and costs roughly $3-5 per full run, so it is a deliberate, separately-authorised step.

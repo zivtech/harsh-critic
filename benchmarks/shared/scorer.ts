@@ -133,6 +133,38 @@ export function validateSharedGroundTruth(value: unknown): GroundTruth {
     }
     findingIds.add(finding.id);
   }
+  const allowedObservations = Array.isArray(value.allowedObservations)
+    ? value.allowedObservations.map((observation, index) => {
+        if (!isRecord(observation)) {
+          throw new Error(`Allowed observation ${index} must be an object`);
+        }
+        if (typeof observation.id !== "string" || observation.id.length === 0) {
+          throw new Error(`Allowed observation ${index} has no id`);
+        }
+        if (
+          !Array.isArray(observation.keywords) ||
+          observation.keywords.length === 0 ||
+          observation.keywords.some((keyword) => typeof keyword !== "string")
+        ) {
+          throw new Error(`Allowed observation ${index} has invalid keywords`);
+        }
+        if (typeof observation.summary !== "string") {
+          throw new Error(`Allowed observation ${index} has invalid summary`);
+        }
+        return {
+          id: observation.id,
+          summary: observation.summary,
+          keywords: observation.keywords.map((keyword) => String(keyword)),
+        };
+      })
+    : undefined;
+
+  if (allowedObservations && !value.isCleanBaseline) {
+    throw new Error(
+      "allowedObservations is only meaningful on a clean baseline",
+    );
+  }
+
   return {
     fixtureId: value.fixtureId,
     fixturePath: value.fixturePath,
@@ -143,6 +175,7 @@ export function validateSharedGroundTruth(value: unknown): GroundTruth {
         : undefined,
     findings,
     isCleanBaseline: value.isCleanBaseline,
+    allowedObservations,
   };
 }
 
@@ -167,6 +200,10 @@ export function normalizeForSharedScoring(
       explanation: finding.explanation,
     })),
     isCleanBaseline: validated.isCleanBaseline,
+    allowedObservations: validated.allowedObservations?.map((observation) => ({
+      ...observation,
+      keywords: [...observation.keywords],
+    })),
   };
 }
 
