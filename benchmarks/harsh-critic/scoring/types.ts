@@ -238,6 +238,11 @@ export interface FixtureResult {
   fixtureId: string;
   domain: Domain;
   agentType: AgentType;
+  /**
+   * 1-based sample index within a multi-sample run. Absent on single-sample
+   * runs and on anything scored offline from a single captured output.
+   */
+  repeat?: number;
   parsedOutput: ParsedAgentOutput;
   scores: BenchmarkScores;
   /** Ground truth findings that were matched */

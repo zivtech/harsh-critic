@@ -15,9 +15,14 @@ import type {
 } from './types.js';
 import {
   ALLOW_ADJACENT_SEVERITY,
-  MIN_KEYWORD_MATCHES,
   SCORING_WEIGHTS,
 } from './types.js';
+import {
+  countKeywordMatches,
+  keywordMatcher,
+  requiredKeywordMatches,
+} from './matchers.js';
+import type { FlatFinding, FlawMatcher } from './matchers.js';
 
 // ============================================================
 // Types
@@ -32,6 +37,12 @@ export interface MatchResult {
   spuriousTexts: string[];
   /** Total agent findings considered */
   totalAgentFindings: number;
+  /**
+   * Per matched flaw, the flattened-finding indices that carry it, best first.
+   * Severity accuracy reads this instead of re-deriving the attribution with a
+   * second, possibly different, matching pass.
+   */
+  indicesByFlaw: Map<string, number[]>;
 }
 
 // ============================================================
@@ -51,56 +62,12 @@ function severityMatches(agentSeverity: Severity, gtSeverity: Severity): boolean
 
 // ============================================================
 // Keyword matching
+//
+// The primitives moved to matchers.ts when flaw matching became a swappable
+// component (research/matcher-selection-precommitment.md). Behaviour unchanged;
+// re-exported here because the ground-truth tests validate keyword sets against
+// the threshold the scorer actually applies.
 // ============================================================
-
-function normalizeTextForMatch(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize('NFKC')
-    .replace(/[`*_#()[\]{}<>"'.,;!?|\\]/g, ' ')
-    .replace(/[-/:]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function keywordMatchesText(text: string, keyword: string): boolean {
-  const lowerText = text.toLowerCase();
-  const lowerKeyword = keyword.toLowerCase();
-
-  if (lowerText.includes(lowerKeyword)) {
-    return true;
-  }
-
-  const normalizedText = normalizeTextForMatch(text);
-  const normalizedKeyword = normalizeTextForMatch(keyword);
-  if (!normalizedKeyword) return false;
-
-  if (normalizedText.includes(normalizedKeyword)) {
-    return true;
-  }
-
-  const keywordParts = normalizedKeyword.split(' ').filter(Boolean);
-  if (keywordParts.length <= 1) return false;
-
-  // Phrase fallback: all phrase tokens present, order-independent.
-  return keywordParts.every((part) => normalizedText.includes(part));
-}
-
-function countKeywordMatches(text: string, keywords: string[]): number {
-  return keywords.filter((kw) => keywordMatchesText(text, kw)).length;
-}
-
-function requiredKeywordMatches(keywords: string[]): number {
-  if (keywords.length === 0) return 0;
-
-  // Scale with keyword set size to reduce accidental matches on larger sets:
-  // 4/5 keywords -> 2 required, 6 keywords -> 3 required.
-  const proportional = Math.ceil(keywords.length * 0.4);
-  return Math.min(
-    keywords.length,
-    Math.max(MIN_KEYWORD_MATCHES, proportional),
-  );
-}
 
 /** Exposed for ground-truth validation tests. */
 export function requiredKeywordMatchesForTest(keywords: string[]): number {
@@ -114,12 +81,6 @@ function textMatchesGroundTruth(text: string, gt: GroundTruthFinding): boolean {
 // ============================================================
 // Flat agent finding list
 // ============================================================
-
-interface FlatFinding {
-  text: string;
-  severity: Severity;
-  hasEvidence: boolean;
-}
 
 function flattenAgentFindings(parsed: ParsedAgentOutput): FlatFinding[] {
   const findings: FlatFinding[] = [];
@@ -154,47 +115,58 @@ function flattenAgentFindings(parsed: ParsedAgentOutput): FlatFinding[] {
 // ============================================================
 
 /**
- * Match agent findings to ground truth findings using keyword overlap.
- * Each ground truth finding can be matched at most once (greedy first-match).
+ * Match agent findings to ground truth findings.
+ *
+ * The decision procedure is pluggable (see matchers.ts); `keyword` is the
+ * default so every previously-recorded score stays reproducible and swapping a
+ * candidate in is an explicit act.
+ *
+ * One agent finding may satisfy several seeded flaws. Critics routinely
+ * consolidate related defects into a single well-argued block -- on
+ * plan-api-redesign both arms answer SF-1, SF-2 and SF-3 inside one finding --
+ * and a 1:1 constraint scored that as 1/3, penalising consolidation rather than
+ * measuring detection. Each flaw must still clear the matcher's bar on its own.
  */
 export function matchFindings(
   parsed: ParsedAgentOutput,
   groundTruth: GroundTruth,
+  matcher: FlawMatcher = keywordMatcher,
 ): MatchResult {
   const agentFindings = flattenAgentFindings(parsed);
-  const matchedIds = new Set<string>();
-  const matchedAgentIndices = new Set<number>();
+  const ctx = { fixtureId: groundTruth.fixtureId, rawOutput: parsed.rawOutput };
 
-  // One agent finding may satisfy several seeded flaws. Critics routinely
-  // consolidate related defects into a single well-argued block -- on
-  // plan-api-redesign both arms answer SF-1, SF-2 and SF-3 inside one finding
-  // -- and a 1:1 constraint scored that as 1/3, penalising consolidation
-  // rather than measuring detection. Each flaw must still independently clear
-  // the keyword bar, so a vague finding cannot sweep the key.
+  const matchedIds: string[] = [];
+  const indicesByFlaw = new Map<string, number[]>();
+  const consumedAgentIndices = new Set<number>();
+
   for (const gt of groundTruth.findings) {
-    for (let i = 0; i < agentFindings.length; i++) {
-      const af = agentFindings[i];
-      if (textMatchesGroundTruth(af.text, gt)) {
-        matchedIds.add(gt.id);
-        matchedAgentIndices.add(i);
-        break; // first finding that answers this flaw; move to the next flaw
-      }
+    const result = matcher.matchFlaw(agentFindings, gt, ctx);
+    if (!result.matched) continue;
+    matchedIds.push(gt.id);
+    indicesByFlaw.set(gt.id, result.findingIndices);
+    // Only the finding credited with the flaw stops being "unmatched". Marking
+    // every keyword-adjacent finding as matched would quietly shrink
+    // unmatchedFindingRate, which is a reported diagnostic; this preserves the
+    // pre-existing accounting exactly.
+    if (result.findingIndices.length > 0) {
+      consumedAgentIndices.add(result.findingIndices[0]);
     }
   }
 
   const missedIds = groundTruth.findings
-    .filter((gt) => !matchedIds.has(gt.id))
+    .filter((gt) => !matchedIds.includes(gt.id))
     .map((gt) => gt.id);
 
   const spuriousTexts = agentFindings
-    .filter((_, i) => !matchedAgentIndices.has(i))
+    .filter((_, i) => !consumedAgentIndices.has(i))
     .map((f) => f.text);
 
   return {
-    matchedIds: Array.from(matchedIds),
+    matchedIds,
     missedIds,
     spuriousTexts,
     totalAgentFindings: agentFindings.length,
+    indicesByFlaw,
   };
 }
 

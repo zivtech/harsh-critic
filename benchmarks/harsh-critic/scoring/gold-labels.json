@@ -1,0 +1,85 @@
+{
+  "_comment": "Per-(output, seeded flaw) labels transcribed from research/captured-output-audit.md section 1, which was written by reading all ten captured outputs end to end BEFORE anything was re-scored. These are the only labels in this project not derived from a score, which is why they are the judge for matcher selection (research/matcher-selection-precommitment.md). Do not edit these to make a matcher look better; if a label is wrong, fix it in the audit first, with the reading that justifies it.",
+  "source": "research/captured-output-audit.md#1",
+  "transcribedOn": "2026-09-01",
+  "outputs": [
+    {
+      "output": "harsh-critic__plan-api-redesign",
+      "agent": "harsh-critic",
+      "fixture": "plan-api-redesign",
+      "yes": ["SF-1", "SF-2", "SF-3"],
+      "partial": [],
+      "auditNote": "all three inside M3"
+    },
+    {
+      "output": "critic__plan-api-redesign",
+      "agent": "critic",
+      "fixture": "plan-api-redesign",
+      "yes": ["SF-1", "SF-2", "SF-3"],
+      "partial": [],
+      "auditNote": "all three inside C1; section 8.2 adds that SF-3 is split across C1 and M2"
+    },
+    {
+      "output": "harsh-critic__plan-auth-migration",
+      "agent": "harsh-critic",
+      "fixture": "plan-auth-migration",
+      "yes": ["SF-1", "SF-2", "SF-3"],
+      "partial": ["SF-4"],
+      "auditNote": "SF-4 partial"
+    },
+    {
+      "output": "critic__plan-auth-migration",
+      "agent": "critic",
+      "fixture": "plan-auth-migration",
+      "yes": ["SF-1", "SF-3"],
+      "partial": ["SF-2"],
+      "auditNote": "SF-2 partial; SF-4 not addressed — the only labelled negative in the set"
+    },
+    {
+      "output": "harsh-critic__plan-data-pipeline",
+      "agent": "harsh-critic",
+      "fixture": "plan-data-pipeline",
+      "yes": ["SF-1", "SF-2", "SF-3"],
+      "partial": []
+    },
+    {
+      "output": "critic__plan-data-pipeline",
+      "agent": "critic",
+      "fixture": "plan-data-pipeline",
+      "yes": ["SF-1", "SF-2", "SF-3"],
+      "partial": []
+    },
+    {
+      "output": "harsh-critic__plan-weak-justification",
+      "agent": "harsh-critic",
+      "fixture": "plan-weak-justification",
+      "yes": ["SF-1", "SF-2", "SF-4", "SF-5", "SF-6"],
+      "partial": [],
+      "auditNote": "SF-3 was examined and judged sound by both arms; it is withdrawn from the ground truth, so it is not a pair here"
+    },
+    {
+      "output": "critic__plan-weak-justification",
+      "agent": "critic",
+      "fixture": "plan-weak-justification",
+      "yes": ["SF-1", "SF-2", "SF-4", "SF-5", "SF-6"],
+      "partial": [],
+      "auditNote": "same"
+    },
+    {
+      "output": "harsh-critic__plan-clean-baseline",
+      "agent": "harsh-critic",
+      "fixture": "plan-clean-baseline",
+      "yes": [],
+      "partial": [],
+      "auditNote": "no seeded flaws. Stale for scoring (reviewed the pre-rebuild plan) but valid text for cross-fixture negatives."
+    },
+    {
+      "output": "critic__plan-clean-baseline",
+      "agent": "critic",
+      "fixture": "plan-clean-baseline",
+      "yes": [],
+      "partial": [],
+      "auditNote": "same"
+    }
+  ]
+}
