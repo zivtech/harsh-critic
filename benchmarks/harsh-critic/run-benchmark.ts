@@ -19,32 +19,52 @@
  *                                      Claude subscription — no API key needed.
  *                                      api calls the Anthropic API directly and
  *                                      requires ANTHROPIC_API_KEY. The two do NOT
- *                                      measure the same thing; see the Runner
- *                                      block below before comparing across them.
+ *                                      measure the same thing; see runners.ts
+ *                                      before comparing across them.
+ *   --repeats <n>                      Samples per cell (default: 1). n=1 cannot
+ *                                      separate a prompt difference from run-to-run
+ *                                      variance; 3 is the documented minimum for a
+ *                                      reportable delta.
+ *   --concurrency <n>                  Cells to run in parallel (default: 1)
+ *   --capture-dir <path>               Where to write each cell's raw output as it
+ *                                      completes (default: <output-dir>/captures/<timestamp>).
+ *                                      Raw outputs make re-scoring free — never
+ *                                      spend quota to re-measure a scorer change.
+ *   --resume                           Reuse any cells already captured in
+ *                                      --capture-dir instead of re-running them.
+ *                                      Without this flag, a --capture-dir holding
+ *                                      non-empty captured cells is refused rather
+ *                                      than silently overwritten.
  *   --dry-run                          Load fixtures and ground truth but skip API calls
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { execFile } from 'child_process';
 import {
   readFileSync,
   writeFileSync,
   mkdirSync,
-  mkdtempSync,
   existsSync,
   readdirSync,
+  statSync,
 } from 'fs';
-import { tmpdir } from 'os';
 import { join, dirname, resolve } from 'path';
-import { promisify } from 'util';
 import { fileURLToPath } from 'url';
-
-const execFileAsync = promisify(execFile);
 
 import type { AgentType, FixtureResult, GroundTruth } from './scoring/types.ts';
 import { parseAgentOutput } from './scoring/parser.ts';
 import { scoreFixture, matchFindings } from './scoring/scorer.ts';
 import { generateJsonReport, generateMarkdownReport } from './scoring/reporter.ts';
+import {
+  type Runner,
+  isRunner,
+  type CliResult,
+  getIsolatedCwd,
+  callClaude,
+  callClaudeCliWithRetry,
+  describeCliError,
+  runPool,
+  sha256,
+} from './runners.ts';
 
 // ============================================================
 // Directory resolution
@@ -66,6 +86,10 @@ interface CliArgs {
   outputDir: string;
   model: string;
   dryRun: boolean;
+  repeats: number;
+  concurrency: number;
+  captureDir: string | null;
+  resume: boolean;
 }
 
 function parseArgs(): CliArgs {
@@ -79,6 +103,10 @@ function parseArgs(): CliArgs {
     // metered API key, and is what this repo actually runs on.
     runner: 'claude-cli',
     dryRun: false,
+    repeats: 1,
+    concurrency: 1,
+    captureDir: null,
+    resume: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -86,7 +114,7 @@ function parseArgs(): CliArgs {
     switch (arg) {
       case '--runner': {
         const val = args[++i];
-        if (val !== 'api' && val !== 'claude-cli') {
+        if (!isRunner(val)) {
           console.error(`Error: --runner must be api or claude-cli (got "${val}")`);
           process.exit(1);
         }
@@ -120,6 +148,30 @@ function parseArgs(): CliArgs {
         break;
       case '--dry-run':
         result.dryRun = true;
+        break;
+      case '--repeats': {
+        const val = Number(args[++i]);
+        if (!Number.isInteger(val) || val < 1) {
+          console.error(`Error: --repeats must be a positive integer (got "${val}")`);
+          process.exit(1);
+        }
+        result.repeats = val;
+        break;
+      }
+      case '--concurrency': {
+        const val = Number(args[++i]);
+        if (!Number.isInteger(val) || val < 1) {
+          console.error(`Error: --concurrency must be a positive integer (got "${val}")`);
+          process.exit(1);
+        }
+        result.concurrency = val;
+        break;
+      }
+      case '--capture-dir':
+        result.captureDir = args[++i];
+        break;
+      case '--resume':
+        result.resume = true;
         break;
       default:
         console.error(`Unknown argument: ${arg}`);
@@ -237,149 +289,129 @@ function loadGroundTruth(fixtureId: string): GroundTruth | null {
 }
 
 // ============================================================
-// Claude API call
-// ============================================================
-
-async function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// ============================================================
 // Runners
 //
-// LOCAL ADDITION (not upstream): `claude-cli` drives the benchmark through the
-// Claude Code CLI, which authenticates against the signed-in subscription
-// rather than a metered API key.
-//
-// It does NOT measure the same thing as the `api` runner, and the difference is
-// not small. `claude -p` carries Claude Code's ambient context — tool schemas,
-// settings, and any CLAUDE.md in scope. Measured on a two-line fixture with
-// --system-prompt replacing the agent prompt: 49,696 cache-creation tokens of
-// context that the API runner does not send at all.
-//
-// Two consequences:
-//   1. Absolute composites are not comparable across runners. Compare within a
-//      single runner only.
-//   2. This repo's own CLAUDE.md documents the critic protocol by name (murder
-//      board, backcasting, ACH-lite). If it were in scope it would leak protocol
-//      knowledge into the BASELINE arm, inflating it. That biases the measured
-//      delta downward — against our prompt — which is the safe direction, but it
-//      is avoidable, so the runner executes from an empty temp directory with
-//      --strict-mcp-config and no tools.
+// LOCAL ADDITION (not upstream): the claude-cli / api runner implementations
+// live in ./runners.ts, shared with grade-outputs.ts. See the comment at the
+// top of that file for what the two runners measure and why the CLI runner
+// runs from an isolated cwd instead of this repo's.
 // ============================================================
 
-type Runner = 'api' | 'claude-cli';
+// ============================================================
+// Retry + concurrency helpers
+//
+// LOCAL ADDITION (not upstream): retry-with-backoff and the concurrency pool
+// also live in ./runners.ts — a long unattended run must survive transient
+// failures rather than aborting on the first one. See that file for details.
+// ============================================================
 
-/** Empty cwd so no project CLAUDE.md, skills, or agents load into the run. */
-let isolatedCwd: string | null = null;
-function getIsolatedCwd(): string {
-  if (isolatedCwd === null) {
-    isolatedCwd = mkdtempSync(join(tmpdir(), 'harsh-critic-bench-'));
-  }
-  return isolatedCwd;
+// ============================================================
+// Capture / resume support
+//
+// LOCAL ADDITION (not upstream): a captured cell is quota already spent.
+// Silently overwriting it on a re-run would re-spend it — that is the exact
+// failure mode a capture dir exists to prevent, so a non-empty captured cell
+// is refused rather than overwritten unless --resume says to reuse it.
+// ============================================================
+
+interface Cell {
+  agentType: AgentType;
+  fixture: Fixture;
+  repeat: number;
 }
 
-const CLI_DISALLOWED_TOOLS = [
-  'Bash', 'Edit', 'Write', 'Read', 'Grep', 'Glob',
-  'WebFetch', 'WebSearch', 'Task', 'Agent', 'NotebookEdit',
-];
-
-interface CliResult {
-  text: string;
-  inputTokens?: number;
-  outputTokens?: number;
-  apiDurationMs?: number;
-  notionalCostUsd?: number;
+function capturedFileName(cell: Cell): string {
+  return `${cell.agentType}__${cell.fixture.id}__r${cell.repeat}.md`;
 }
 
-async function callClaudeCli(
-  systemPrompt: string,
-  userMessage: string,
-  model: string,
-): Promise<CliResult> {
-  const { ANTHROPIC_API_KEY: _dropped, ...env } = process.env;
-
-  const { stdout } = await execFileAsync(
-    'claude',
-    [
-      '-p', userMessage,
-      '--system-prompt', systemPrompt,
-      '--model', model,
-      '--output-format', 'json',
-      '--max-turns', '1',
-      '--strict-mcp-config',
-      '--disallowedTools', ...CLI_DISALLOWED_TOOLS,
-    ],
-    {
-      cwd: getIsolatedCwd(),
-      env,
-      maxBuffer: 64 * 1024 * 1024,
-      timeout: 15 * 60 * 1000,
-    },
-  );
-
-  const payload = JSON.parse(stdout);
-  if (payload.is_error) {
-    throw new Error(`claude -p reported an error: ${payload.subtype ?? 'unknown'}`);
-  }
-  if (typeof payload.result !== 'string' || payload.result.length === 0) {
-    throw new Error('claude -p returned no result text');
-  }
-
-  return {
-    text: payload.result,
-    inputTokens: payload.usage?.input_tokens,
-    outputTokens: payload.usage?.output_tokens,
-    apiDurationMs: payload.duration_api_ms,
-    // Informational on a subscription: what the same tokens would have cost via
-    // the API. Subscription usage draws on plan quota, not this figure.
-    notionalCostUsd: payload.total_cost_usd,
-  };
+interface ExistingCapture {
+  cell: Cell;
+  capturedAs: string;
+  path: string;
 }
 
-async function callClaude(
-  client: Anthropic,
-  systemPrompt: string,
-  userMessage: string,
-  model: string,
-  maxRetries = 5,
-): Promise<string> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await client.messages.create({
-        model,
-        max_tokens: 8192,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: userMessage,
-          },
-        ],
-      });
-
-      const textBlock = response.content.find((b) => b.type === 'text');
-      if (!textBlock || textBlock.type !== 'text') {
-        throw new Error('No text content in Claude response');
-      }
-      return textBlock.text;
-    } catch (err: unknown) {
-      const isRetryable =
-        err instanceof Error &&
-        (err.message.includes('529') ||
-          err.message.includes('overloaded') ||
-          err.message.includes('rate') ||
-          err.message.includes('500'));
-      if (isRetryable && attempt < maxRetries) {
-        const delayMs = Math.min(1000 * 2 ** attempt, 60000);
-        process.stdout.write(`\n    Retrying in ${(delayMs / 1000).toFixed(0)}s (attempt ${attempt + 1}/${maxRetries})... `);
-        await sleep(delayMs);
-        continue;
-      }
-      throw err;
+/**
+ * Cells whose raw output already exists on disk. A zero-byte file is a crash
+ * artifact — the write started but the process died mid-write — and is
+ * treated as absent, not as a captured cell.
+ */
+function existingCaptures(captureDir: string, cells: Cell[]): ExistingCapture[] {
+  const found: ExistingCapture[] = [];
+  for (const cell of cells) {
+    const capturedAs = capturedFileName(cell);
+    const path = join(captureDir, capturedAs);
+    if (existsSync(path) && statSync(path).size > 0) {
+      found.push({ cell, capturedAs, path });
     }
   }
-  throw new Error('Exhausted retries');
+  return found;
+}
+
+interface RunManifestFile {
+  capturedOn?: string;
+  promptSha256?: Record<string, string>;
+  planSha256AtCapture?: Record<string, string>;
+  [key: string]: unknown;
+}
+
+function readManifestIfPresent(captureDir: string): RunManifestFile | null {
+  const manifestPath = join(captureDir, 'run-manifest.json');
+  if (!existsSync(manifestPath)) return null;
+  try {
+    return JSON.parse(readFileSync(manifestPath, 'utf-8')) as RunManifestFile;
+  } catch (err) {
+    console.error(`Error: could not parse existing run-manifest.json at ${manifestPath}: ${err}`);
+    process.exit(1);
+    // process.exit() throws — TypeScript needs this to satisfy the return type
+    return null;
+  }
+}
+
+/**
+ * A resumed cell's output was reviewed against specific prompt/fixture text.
+ * If that text has since changed, the cell cannot be pooled with fresh ones —
+ * they would be scoring two different reviews as if they were one measurement.
+ */
+function verifyManifestProvenance(
+  manifest: RunManifestFile | null,
+  agentsToRun: AgentType[],
+  agentPrompts: Partial<Record<AgentType, string>>,
+  fixtures: Fixture[],
+): void {
+  if (manifest === null) {
+    console.warn(
+      "  Warning: no run-manifest.json in the capture dir — reused cells' provenance could not be verified.\n",
+    );
+    return;
+  }
+
+  const mismatches: string[] = [];
+  for (const agent of agentsToRun) {
+    const prev = manifest.promptSha256?.[agent];
+    const current = sha256(agentPrompts[agent] ?? '');
+    if (prev !== undefined && prev !== current) {
+      mismatches.push(`    agent "${agent}": prompt sha256 ${prev} -> ${current}`);
+    }
+  }
+  for (const fixture of fixtures) {
+    const prev = manifest.planSha256AtCapture?.[fixture.id];
+    const current = sha256(fixture.content);
+    if (prev !== undefined && prev !== current) {
+      mismatches.push(`    fixture "${fixture.id}": plan sha256 ${prev} -> ${current}`);
+    }
+  }
+
+  if (mismatches.length > 0) {
+    console.error(
+      '\nError: --resume cannot reuse the captured cells in this directory — the\n' +
+        '  prompt or fixture text differs from what they reviewed:\n' +
+        mismatches.join('\n') +
+        '\n\n  The existing cells reviewed different text and cannot be pooled with new\n' +
+        '  ones. Choose a different --capture-dir, or revert the prompt/fixture and\n' +
+        '  retry.\n',
+    );
+    process.exit(1);
+  }
 }
 
 // ============================================================
@@ -517,92 +549,307 @@ async function main(): Promise<void> {
     mkdirSync(args.outputDir, { recursive: true });
   }
 
-  // Run benchmark
+  // ============================================================
+  // Work list: one cell per (agent, fixture, repeat)
+  //
+  // LOCAL ADDITION (not upstream): repeats are interleaved -- every agent and
+  // fixture completes repeat 1 before repeat 2 starts -- rather than nested per
+  // agent. If service behaviour drifts over the hour a full run takes, an
+  // interleaved order spreads that drift across both arms instead of loading it
+  // onto whichever arm ran last.
+  // ============================================================
   const allResults: FixtureResult[] = [];
-  const totalRuns = fixtures.length * agentsToRun.length;
+
+  const cells: Cell[] = [];
+  for (let repeat = 1; repeat <= args.repeats; repeat++) {
+    for (const fixture of fixtures) {
+      for (const agentType of agentsToRun) {
+        cells.push({ agentType, fixture, repeat });
+      }
+    }
+  }
+
+  const runStamp = new Date()
+    .toISOString()
+    .replace(/[:.]/g, '-')
+    .replace('T', '_')
+    .slice(0, 19);
+  const captureDir = args.captureDir ?? join(args.outputDir, 'captures', runStamp);
+  mkdirSync(captureDir, { recursive: true });
+
+  // ============================================================
+  // Overwrite guard / resume
+  //
+  // LOCAL ADDITION (not upstream): must run before any model call and before
+  // the "Running benchmark" banner — see the section comment above.
+  // ============================================================
+  const existing = existingCaptures(captureDir, cells);
+
+  if (!args.resume && existing.length > 0) {
+    console.error(
+      `\nError: ${existing.length} of ${cells.length} cell(s) already have captured\n` +
+        `  output in ${captureDir}:\n` +
+        existing.map((e) => `    ${e.capturedAs}`).join('\n') +
+        '\n\n' +
+        '  Pass --resume to reuse them, or choose a different --capture-dir to start\n' +
+        '  clean.\n',
+    );
+    process.exit(1);
+  }
+
+  const priorManifest = args.resume ? readManifestIfPresent(captureDir) : null;
+
+  if (args.resume && existing.length > 0) {
+    verifyManifestProvenance(priorManifest, agentsToRun, agentPrompts, fixtures);
+  }
+
+  const capturedOn = priorManifest?.capturedOn ?? runStamp;
+  const existingByKey = new Map(existing.map((e) => [e.capturedAs, e]));
 
   console.log(
-    `\nRunning benchmark: ${totalRuns} run(s) total` +
-    ` (${agentsToRun.join(', ')} x ${fixtures.length} fixture(s))...\n`,
+    `\nRunning benchmark: ${cells.length} cell(s)` +
+      ` (${agentsToRun.join(', ')} x ${fixtures.length} fixture(s) x ${args.repeats} repeat(s)),` +
+      ` concurrency ${args.concurrency}` +
+      (args.resume
+        ? `, reusing ${existing.length} captured / running ${cells.length - existing.length} fresh`
+        : '') +
+      `...\n`,
   );
+  console.log(`  Raw outputs: ${captureDir}\n`);
 
   let notionalCostUsd = 0;
 
   if (args.runner === 'claude-cli') {
     console.log(
       'Runner: claude-cli (signed-in subscription). Absolute scores are NOT\n' +
-        '  comparable with the api runner — see the Runner block in this file.\n' +
+        '  comparable with the api runner — see runners.ts.\n' +
         `  Isolated working directory: ${getIsolatedCwd()}\n`,
     );
   }
 
-  for (const agentType of agentsToRun) {
-    const systemPrompt = agentPrompts[agentType];
+  interface CellFailure {
+    agentType: AgentType;
+    fixtureId: string;
+    repeat: number;
+    error: string;
+  }
+  interface CellTelemetry {
+    agentType: AgentType;
+    fixtureId: string;
+    repeat: number;
+    capturedAs: string;
+    resumed: boolean;
+    elapsedS: number;
+    inputTokens?: number;
+    outputTokens?: number;
+    rawOutputChars: number;
+  }
+  type CellOutcome =
+    | { kind: 'output'; rawOutput: string; telemetry: CellTelemetry }
+    | { kind: 'failure'; failure: CellFailure; elapsedS: string };
+
+  const failures: CellFailure[] = [];
+  const telemetry: CellTelemetry[] = [];
+  let completed = 0;
+
+  function writeManifest(): void {
+    const manifest: Record<string, unknown> = {
+      capturedOn,
+      runner: args.runner,
+      model: args.model,
+      agents: agentsToRun,
+      samplesPerCell: args.repeats,
+      concurrency: args.concurrency,
+      planSha256AtCapture: Object.fromEntries(
+        fixtures.map((f) => [f.id, sha256(f.content)]),
+      ),
+      promptSha256: Object.fromEntries(
+        agentsToRun.map((a) => [a, sha256(agentPrompts[a] ?? '')]),
+      ),
+      cells: telemetry.slice().sort(
+        (a, b) =>
+          a.repeat - b.repeat ||
+          a.fixtureId.localeCompare(b.fixtureId) ||
+          a.agentType.localeCompare(b.agentType),
+      ),
+      failures,
+    };
+
+    if (args.resume) {
+      manifest.resumedOn = runStamp;
+      manifest.reusedCells = telemetry.filter((t) => t.resumed).length;
+    }
+
+    writeFileSync(
+      join(captureDir, 'run-manifest.json'),
+      JSON.stringify(manifest, null, 2),
+      'utf-8',
+    );
+  }
+
+  // LOCAL ADDITION (not upstream): a captured cell is quota already spent —
+  // --resume reads it back instead of re-spending it.
+  function reuseCapturedCell(cell: Cell, capturedAs: string, path: string): CellOutcome {
+    const rawOutput = readFileSync(path, 'utf-8');
+    return {
+      kind: 'output',
+      rawOutput,
+      telemetry: {
+        agentType: cell.agentType,
+        fixtureId: cell.fixture.id,
+        repeat: cell.repeat,
+        capturedAs,
+        resumed: true,
+        elapsedS: 0,
+        rawOutputChars: rawOutput.length,
+      },
+    };
+  }
+
+  async function callModelForCell(cell: Cell, capturedAs: string): Promise<CellOutcome> {
+    const systemPrompt = agentPrompts[cell.agentType];
     if (!systemPrompt) {
-      console.error(`Error: no prompt loaded for agent "${agentType}"`);
+      console.error(`Error: no prompt loaded for agent "${cell.agentType}"`);
       process.exit(1);
     }
 
-    for (const fixture of fixtures) {
-      const label = `${agentType} on ${fixture.id}`;
-      process.stdout.write(`Running ${label}... `);
-      const startMs = Date.now();
+    const startMs = Date.now();
+    const userMessage = `Review the following work:\n\n${cell.fixture.content}`;
 
-      const userMessage = `Review the following work:\n\n${fixture.content}`;
-
-      let rawOutput: string;
-      let cliTelemetry: CliResult | null = null;
-      try {
-        if (args.runner === 'claude-cli') {
-          cliTelemetry = await callClaudeCli(systemPrompt, userMessage, args.model);
-          rawOutput = cliTelemetry.text;
-        } else {
-          rawOutput = await callClaude(client, systemPrompt, userMessage, args.model);
-        }
-      } catch (err) {
-        const elapsedS = ((Date.now() - startMs) / 1000).toFixed(1);
-        console.log(`FAILED (${elapsedS}s)`);
-        console.error(`  Error calling Claude (${args.runner}): ${err}`);
-        process.exit(1);
+    let rawOutput: string;
+    let cliTelemetry: CliResult | null = null;
+    try {
+      if (args.runner === 'claude-cli') {
+        cliTelemetry = await callClaudeCliWithRetry(systemPrompt, userMessage, args.model);
+        rawOutput = cliTelemetry.text;
+      } else {
+        rawOutput = await callClaude(client, systemPrompt, userMessage, args.model);
       }
-
-      if (cliTelemetry) {
-        notionalCostUsd += cliTelemetry.notionalCostUsd ?? 0;
-      }
-
-      const elapsedS = ((Date.now() - startMs) / 1000).toFixed(1);
-      console.log(`done (${elapsedS}s)`);
-
-      // Parse agent output
-      const parsedOutput = parseAgentOutput(rawOutput, agentType);
-
-      // Build ground truth — use empty placeholder if none exists
-      const groundTruth: GroundTruth = groundTruthMap.get(fixture.id) ?? {
-        fixtureId: fixture.id,
-        fixturePath: fixture.id,
-        domain: fixture.domain as GroundTruth['domain'],
-        expectedVerdict: 'REJECT',
-        findings: [],
-        isCleanBaseline: false,
+    } catch (err) {
+      return {
+        kind: 'failure',
+        elapsedS: ((Date.now() - startMs) / 1000).toFixed(1),
+        failure: {
+          agentType: cell.agentType,
+          fixtureId: cell.fixture.id,
+          repeat: cell.repeat,
+          // The raw error embeds the whole command line, plan text included;
+          // keep the cause, not 20 KB of fixture, in the log and manifest.
+          error: describeCliError(err),
+        },
       };
-
-      // Score and collect match details
-      const scores = scoreFixture(parsedOutput, groundTruth);
-      const matchResult = matchFindings(parsedOutput, groundTruth);
-
-      const fixtureResult: FixtureResult = {
-        fixtureId: fixture.id,
-        domain: groundTruth.domain,
-        agentType,
-        parsedOutput,
-        scores,
-        matchedFindings: matchResult.matchedIds,
-        missedFindings: matchResult.missedIds,
-        spuriousFindings: matchResult.spuriousTexts,
-      };
-
-      allResults.push(fixtureResult);
     }
+
+    if (cliTelemetry) {
+      notionalCostUsd += cliTelemetry.notionalCostUsd ?? 0;
+    }
+
+    // Write the raw output before parsing anything. Re-scoring is free only if
+    // the raw text survives the run, and a run that dies at cell 25 should keep
+    // the 24 outputs it already paid for.
+    writeFileSync(join(captureDir, capturedAs), rawOutput, 'utf-8');
+
+    return {
+      kind: 'output',
+      rawOutput,
+      telemetry: {
+        agentType: cell.agentType,
+        fixtureId: cell.fixture.id,
+        repeat: cell.repeat,
+        capturedAs,
+        resumed: false,
+        elapsedS: Number(((Date.now() - startMs) / 1000).toFixed(1)),
+        inputTokens: cliTelemetry?.inputTokens,
+        outputTokens: cliTelemetry?.outputTokens,
+        rawOutputChars: rawOutput.length,
+      },
+    };
+  }
+
+  async function runCell(cell: Cell): Promise<void> {
+    const label = `${cell.agentType} on ${cell.fixture.id} [r${cell.repeat}]`;
+    const capturedAs = capturedFileName(cell);
+    const existingHit = existingByKey.get(capturedAs);
+
+    const outcome = existingHit
+      ? reuseCapturedCell(cell, capturedAs, existingHit.path)
+      : await callModelForCell(cell, capturedAs);
+
+    completed++;
+
+    if (outcome.kind === 'failure') {
+      console.log(
+        `  [${completed}/${cells.length}] FAILED ${label} (${outcome.elapsedS}s): ${outcome.failure.error}`,
+      );
+      failures.push(outcome.failure);
+      writeManifest();
+      return;
+    }
+
+    if (outcome.telemetry.resumed) {
+      console.log(`  [${completed}/${cells.length}] reused ${label}`);
+    } else {
+      console.log(
+        `  [${completed}/${cells.length}] done   ${label} (${outcome.telemetry.elapsedS.toFixed(1)}s)`,
+      );
+    }
+    telemetry.push(outcome.telemetry);
+
+    const parsedOutput = parseAgentOutput(outcome.rawOutput, cell.agentType);
+
+    // Build ground truth — use empty placeholder if none exists
+    const groundTruth: GroundTruth = groundTruthMap.get(cell.fixture.id) ?? {
+      fixtureId: cell.fixture.id,
+      fixturePath: cell.fixture.id,
+      domain: cell.fixture.domain as GroundTruth['domain'],
+      expectedVerdict: 'REJECT',
+      findings: [],
+      isCleanBaseline: false,
+    };
+
+    const scores = scoreFixture(parsedOutput, groundTruth);
+    const matchResult = matchFindings(parsedOutput, groundTruth);
+
+    allResults.push({
+      fixtureId: cell.fixture.id,
+      domain: groundTruth.domain,
+      agentType: cell.agentType,
+      repeat: cell.repeat,
+      parsedOutput,
+      scores,
+      matchedFindings: matchResult.matchedIds,
+      missedFindings: matchResult.missedIds,
+      spuriousFindings: matchResult.spuriousTexts,
+    });
+
+    writeManifest();
+  }
+
+  // Capture manifest: what was run, against which plan text, and what came
+  // back. Written now (before any cell runs) so a crash leaves a provenance
+  // record, then rewritten after every cell and once more at the end.
+  writeManifest();
+
+  await runPool(cells, args.concurrency, runCell);
+
+  writeManifest();
+
+  if (failures.length > 0) {
+    console.log(
+      `\n  ${failures.length} of ${cells.length} cell(s) FAILED and are excluded from scoring:`,
+    );
+    for (const f of failures) {
+      console.log(`    ${f.agentType} / ${f.fixtureId} r${f.repeat}: ${f.error.slice(0, 160)}`);
+    }
+    console.log(
+      '  Cells are excluded, not zeroed. Any aggregate below is over an unbalanced\n' +
+        '  design — re-run the missing cells before comparing arms.\n',
+    );
+  }
+
+  if (allResults.length === 0) {
+    console.error('\nEvery cell failed. Nothing to report.');
+    process.exit(1);
   }
 
   // Generate reports
@@ -635,6 +882,14 @@ async function main(): Promise<void> {
   printSummaryTable(allResults);
 
   if (agentsToRun.length === 2) {
+    if (args.repeats > 1) {
+      console.log(
+        'NOTE: the built-in head-to-head below pairs by fixture id and is not\n' +
+          '  repeat-aware — it reports whichever rows it matched first, not a mean.\n' +
+          '  For a multi-sample delta with its spread, run:\n' +
+          `    npx tsx benchmarks/harsh-critic/aggregate-repeats.ts ${captureDir}\n`,
+      );
+    }
     printHeadToHead(jsonReport.headToHead);
 
     const harsh = jsonReport.aggregateScores['harsh-critic'];
