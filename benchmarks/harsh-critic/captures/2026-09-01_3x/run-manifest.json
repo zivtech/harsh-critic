@@ -1,0 +1,351 @@
+{
+  "capturedOn": "2026-09-02_00-40-33",
+  "runner": "claude-cli",
+  "model": "claude-opus-4-8",
+  "agents": [
+    "harsh-critic",
+    "critic"
+  ],
+  "samplesPerCell": 3,
+  "concurrency": 3,
+  "planSha256AtCapture": {
+    "plan-api-redesign": "f9957a42835b66e81c85ae64e8534d89d447b37ef2ef19025413014f3964e7d4",
+    "plan-auth-migration": "eaf90814bf3b91c3217b1fe495f1219dc7cad1068e6de286f8e95c9c8d093e78",
+    "plan-clean-baseline": "ad900a1233254428416a7f28eb83153ee92a468c573492bcd724f3bb3589456f",
+    "plan-data-pipeline": "9db87f16327a8acbe9bcd3a886a0a970cda94fdd48fe555fd3ebbbad1fda12d5",
+    "plan-weak-justification": "e525acf571581141115b443ee4da576dd79ea69ce528a7826f2756a47b0f678b"
+  },
+  "promptSha256": {
+    "harsh-critic": "8ff6a888bed52d03dbf1d6b3c9579b3d88d10f5fc8dc8318dbbe28ccff0ba4cd",
+    "critic": "a4dddb8bcb2de5170eaf4649d2bf3bc895bceeb87528cd2a9941929f2ce2919f"
+  },
+  "cells": [
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-api-redesign",
+      "repeat": 1,
+      "capturedAs": "critic__plan-api-redesign__r1.md",
+      "resumed": true,
+      "elapsedS": 0,
+      "rawOutputChars": 19423
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-api-redesign",
+      "repeat": 1,
+      "capturedAs": "harsh-critic__plan-api-redesign__r1.md",
+      "resumed": true,
+      "elapsedS": 0,
+      "rawOutputChars": 21396
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-auth-migration",
+      "repeat": 1,
+      "capturedAs": "critic__plan-auth-migration__r1.md",
+      "resumed": false,
+      "elapsedS": 221.3,
+      "inputTokens": 2,
+      "outputTokens": 14989,
+      "rawOutputChars": 16211
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-auth-migration",
+      "repeat": 1,
+      "capturedAs": "harsh-critic__plan-auth-migration__r1.md",
+      "resumed": true,
+      "elapsedS": 0,
+      "rawOutputChars": 20185
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-clean-baseline",
+      "repeat": 1,
+      "capturedAs": "critic__plan-clean-baseline__r1.md",
+      "resumed": false,
+      "elapsedS": 357.5,
+      "inputTokens": 2,
+      "outputTokens": 24142,
+      "rawOutputChars": 19767
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-clean-baseline",
+      "repeat": 1,
+      "capturedAs": "harsh-critic__plan-clean-baseline__r1.md",
+      "resumed": false,
+      "elapsedS": 362.8,
+      "inputTokens": 2,
+      "outputTokens": 24448,
+      "rawOutputChars": 21823
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-data-pipeline",
+      "repeat": 1,
+      "capturedAs": "critic__plan-data-pipeline__r1.md",
+      "resumed": false,
+      "elapsedS": 219.9,
+      "inputTokens": 2,
+      "outputTokens": 14690,
+      "rawOutputChars": 17685
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-data-pipeline",
+      "repeat": 1,
+      "capturedAs": "harsh-critic__plan-data-pipeline__r1.md",
+      "resumed": false,
+      "elapsedS": 263.5,
+      "inputTokens": 2,
+      "outputTokens": 17657,
+      "rawOutputChars": 23971
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-weak-justification",
+      "repeat": 1,
+      "capturedAs": "critic__plan-weak-justification__r1.md",
+      "resumed": false,
+      "elapsedS": 194.9,
+      "inputTokens": 2,
+      "outputTokens": 13024,
+      "rawOutputChars": 13605
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-weak-justification",
+      "repeat": 1,
+      "capturedAs": "harsh-critic__plan-weak-justification__r1.md",
+      "resumed": false,
+      "elapsedS": 210.8,
+      "inputTokens": 2,
+      "outputTokens": 13994,
+      "rawOutputChars": 18739
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-api-redesign",
+      "repeat": 2,
+      "capturedAs": "critic__plan-api-redesign__r2.md",
+      "resumed": false,
+      "elapsedS": 218,
+      "inputTokens": 2,
+      "outputTokens": 14277,
+      "rawOutputChars": 15482
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-api-redesign",
+      "repeat": 2,
+      "capturedAs": "harsh-critic__plan-api-redesign__r2.md",
+      "resumed": false,
+      "elapsedS": 243.4,
+      "inputTokens": 2,
+      "outputTokens": 16233,
+      "rawOutputChars": 20881
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-auth-migration",
+      "repeat": 2,
+      "capturedAs": "critic__plan-auth-migration__r2.md",
+      "resumed": false,
+      "elapsedS": 211.1,
+      "inputTokens": 2,
+      "outputTokens": 13793,
+      "rawOutputChars": 16140
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-auth-migration",
+      "repeat": 2,
+      "capturedAs": "harsh-critic__plan-auth-migration__r2.md",
+      "resumed": false,
+      "elapsedS": 344.7,
+      "inputTokens": 2,
+      "outputTokens": 22298,
+      "rawOutputChars": 30064
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-clean-baseline",
+      "repeat": 2,
+      "capturedAs": "critic__plan-clean-baseline__r2.md",
+      "resumed": false,
+      "elapsedS": 289.2,
+      "inputTokens": 2,
+      "outputTokens": 19417,
+      "rawOutputChars": 16576
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-clean-baseline",
+      "repeat": 2,
+      "capturedAs": "harsh-critic__plan-clean-baseline__r2.md",
+      "resumed": false,
+      "elapsedS": 763.5,
+      "inputTokens": 2,
+      "outputTokens": 33701,
+      "rawOutputChars": 28047
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-data-pipeline",
+      "repeat": 2,
+      "capturedAs": "critic__plan-data-pipeline__r2.md",
+      "resumed": false,
+      "elapsedS": 224.8,
+      "inputTokens": 2,
+      "outputTokens": 15246,
+      "rawOutputChars": 16150
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-data-pipeline",
+      "repeat": 2,
+      "capturedAs": "harsh-critic__plan-data-pipeline__r2.md",
+      "resumed": false,
+      "elapsedS": 274.3,
+      "inputTokens": 2,
+      "outputTokens": 18182,
+      "rawOutputChars": 20145
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-weak-justification",
+      "repeat": 2,
+      "capturedAs": "critic__plan-weak-justification__r2.md",
+      "resumed": false,
+      "elapsedS": 208.1,
+      "inputTokens": 2,
+      "outputTokens": 13798,
+      "rawOutputChars": 18937
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-weak-justification",
+      "repeat": 2,
+      "capturedAs": "harsh-critic__plan-weak-justification__r2.md",
+      "resumed": false,
+      "elapsedS": 216.8,
+      "inputTokens": 2,
+      "outputTokens": 14013,
+      "rawOutputChars": 18870
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-api-redesign",
+      "repeat": 3,
+      "capturedAs": "critic__plan-api-redesign__r3.md",
+      "resumed": false,
+      "elapsedS": 304.1,
+      "inputTokens": 2,
+      "outputTokens": 12966,
+      "rawOutputChars": 18831
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-api-redesign",
+      "repeat": 3,
+      "capturedAs": "harsh-critic__plan-api-redesign__r3.md",
+      "resumed": false,
+      "elapsedS": 268.1,
+      "inputTokens": 2,
+      "outputTokens": 17862,
+      "rawOutputChars": 18818
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-auth-migration",
+      "repeat": 3,
+      "capturedAs": "critic__plan-auth-migration__r3.md",
+      "resumed": false,
+      "elapsedS": 365.7,
+      "inputTokens": 2,
+      "outputTokens": 15473,
+      "rawOutputChars": 17682
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-auth-migration",
+      "repeat": 3,
+      "capturedAs": "harsh-critic__plan-auth-migration__r3.md",
+      "resumed": false,
+      "elapsedS": 242.4,
+      "inputTokens": 2,
+      "outputTokens": 16117,
+      "rawOutputChars": 20602
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-clean-baseline",
+      "repeat": 3,
+      "capturedAs": "critic__plan-clean-baseline__r3.md",
+      "resumed": false,
+      "elapsedS": 385.6,
+      "inputTokens": 2,
+      "outputTokens": 25795,
+      "rawOutputChars": 25013
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-clean-baseline",
+      "repeat": 3,
+      "capturedAs": "harsh-critic__plan-clean-baseline__r3.md",
+      "resumed": false,
+      "elapsedS": 379.3,
+      "inputTokens": 2,
+      "outputTokens": 24794,
+      "rawOutputChars": 20897
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-data-pipeline",
+      "repeat": 3,
+      "capturedAs": "critic__plan-data-pipeline__r3.md",
+      "resumed": false,
+      "elapsedS": 239.4,
+      "inputTokens": 2,
+      "outputTokens": 16120,
+      "rawOutputChars": 17153
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-data-pipeline",
+      "repeat": 3,
+      "capturedAs": "harsh-critic__plan-data-pipeline__r3.md",
+      "resumed": false,
+      "elapsedS": 277.2,
+      "inputTokens": 2,
+      "outputTokens": 18292,
+      "rawOutputChars": 22639
+    },
+    {
+      "agentType": "critic",
+      "fixtureId": "plan-weak-justification",
+      "repeat": 3,
+      "capturedAs": "critic__plan-weak-justification__r3.md",
+      "resumed": false,
+      "elapsedS": 198.7,
+      "inputTokens": 2,
+      "outputTokens": 12732,
+      "rawOutputChars": 15780
+    },
+    {
+      "agentType": "harsh-critic",
+      "fixtureId": "plan-weak-justification",
+      "repeat": 3,
+      "capturedAs": "harsh-critic__plan-weak-justification__r3.md",
+      "resumed": false,
+      "elapsedS": 255.4,
+      "inputTokens": 2,
+      "outputTokens": 16902,
+      "rawOutputChars": 18706
+    }
+  ],
+  "failures": [],
+  "resumedOn": "2026-09-02_00-40-33",
+  "reusedCells": 3
+}
