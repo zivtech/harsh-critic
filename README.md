@@ -95,7 +95,7 @@ Use `harsh-critic` right before merge/deploy for risky code paths, as a second-p
 
 ## Verify
 
-This repo has no application build system. Use the local verifier and tests to check prompt-surface integrity:
+This repo has no application build system. Use the local verifier (which includes historical benchmark evidence-record integrity) and tests to check prompt-surface integrity:
 
 ```bash
 python3 scripts/verify_surfaces.py

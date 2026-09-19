@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "record_type": "gap_record",
+  "id": "harsh-critic-historical-benchmark-raw-artifact-gap",
+  "status": "invalid",
+  "integrity_verified": true,
+  "status_reasons": [
+    "The repository's own historical-benchmark provenance plan identifies the referenced raw benchmark result as absent.",
+    "Retained prose review files and fixtures can be integrity-checked, but no retained harness, scorer, provider version, isolation receipt, or raw benchmark response binds them into a reproducible execution record.",
+    "This is a custody gap record, not a manifest for the visible historical review text."
+  ],
+  "missing_fields": [
+    "provider.name",
+    "provider.model_version",
+    "execution.timestamp",
+    "execution.isolation_receipt",
+    "input.prompt",
+    "harness",
+    "scorer",
+    "raw_output"
+  ],
+  "evidence_boundary": "The hashes below prove only that selected retained documents have not changed. They do not prove that test-3.1 was generated from the named fixture, by harsh-critic, or by any specific model or harness.",
+  "retained_artifacts": [
+    {"role": "provenance-plan", "path": "plans/003-historical-benchmark-provenance.md", "sha256": "2776f11a7673333ccf602831fa89122a72b8761b98a55adb0ea3ab2f3618b30c", "historical_git_ref": "d7ecb5788d87c5c43d07f7b44db86edf8b2a4221", "historical_sha256": "2776f11a7673333ccf602831fa89122a72b8761b98a55adb0ea3ab2f3618b30c"},
+    {"role": "repository-boundary", "path": "README.md", "sha256": "2e24b8c544684f337912f870ae97317f43963384ed1b3c78742db399aa581165", "historical_git_ref": "49dde99e784b48439b77f7e963bb7adb298d6d1b", "historical_sha256": "8fa7139b42c98829263abc39045c8204fe95a25b2cde75942ff919e67195a48f"},
+    {"role": "historical-review-text", "path": "benchmarks/harsh-critic/results/test-3.1-full-auth-migration.md", "sha256": "88feff7f498221481ab5066b42bc8f34316fb671580c24fea5605967574f8c88", "historical_git_ref": "49dde99e784b48439b77f7e963bb7adb298d6d1b", "historical_sha256": "88feff7f498221481ab5066b42bc8f34316fb671580c24fea5605967574f8c88"},
+    {"role": "candidate-fixture-not-proven-input", "path": "benchmarks/harsh-critic/fixtures/plan-auth-migration.md", "sha256": "eaf90814bf3b91c3217b1fe495f1219dc7cad1068e6de286f8e95c9c8d093e78", "historical_git_ref": "49dde99e784b48439b77f7e963bb7adb298d6d1b", "historical_sha256": "eaf90814bf3b91c3217b1fe495f1219dc7cad1068e6de286f8e95c9c8d093e78"}
+  ],
+  "known_absent_artifacts": [
+    {
+      "path": "benchmarks/harsh-critic/results/realist-check-run/results_2026-03-05_04-04-23.json",
+      "reason": "Named as absent in plans/003-historical-benchmark-provenance.md; no replacement raw run artifact is asserted.",
+      "absence_from_reachable_history": true
+    }
+  ]
+}

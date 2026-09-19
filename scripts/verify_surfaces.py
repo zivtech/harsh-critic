@@ -176,6 +176,20 @@ def check_fpr_chart(root: pathlib.Path) -> None:
     validate_fpr_chart(read_text(root / "docs/index.html"), "docs/index.html")
 
 
+def check_run_manifests(root: pathlib.Path) -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/verify_run_manifests.py"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    require(
+        result.returncode == 0,
+        "run-manifest verification failed: " + (result.stderr or result.stdout).strip(),
+    )
+
+
 def run_checks(root: pathlib.Path) -> list[str]:
     check_registry_paths(root)
     check_codex_toml(root)
@@ -184,6 +198,7 @@ def run_checks(root: pathlib.Path) -> list[str]:
     check_data_critic_duplicates(root)
     warnings = check_public_benchmark_caveats(root)
     check_fpr_chart(root)
+    check_run_manifests(root)
     return warnings
 
 
@@ -205,7 +220,7 @@ def main() -> int:
 
     print(
         "OK: registry paths, codex TOML, Pages workflow, ignore rules, "
-        "data-critic duplicates, benchmark caveats, and FPR chart labels verified. "
+        "data-critic duplicates, benchmark caveats, FPR chart labels, and benchmark evidence records verified. "
         f"{len(KNOWN_FOLLOWUP_CHECKS)} follow-up checks not yet enforced."
     )
     return 0
