@@ -55,6 +55,12 @@ class VerifyRunManifestsTest(unittest.TestCase):
         return manifest_dir
 
     def test_repository_gap_record_validates(self):
+        expected = REPO_ROOT / self.verifier.DEFAULT_MANIFEST_DIR / "historical-benchmark-gap.json"
+        self.verifier.validate_manifest(REPO_ROOT, expected)
+        self.assertEqual(
+            json.loads(expected.read_text(encoding="utf-8"))["id"],
+            "harsh-critic-historical-benchmark-raw-artifact-gap",
+        )
         self.assertGreaterEqual(self.verifier.validate_directory(REPO_ROOT), 1)
 
     def test_hash_mismatch_fails(self):
