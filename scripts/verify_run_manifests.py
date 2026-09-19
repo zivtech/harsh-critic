@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Verify retained-artifact hashes in historical evaluation run manifests.
+"""Verify retained-artifact hashes in historical benchmark evidence records.
 
 This verifier establishes file integrity only. It deliberately does not turn
 an incomplete historical record into a replayable or provider-verified run.
+It scans only JSON records in the configured evidence-record directory; it is
+not a general validator for capture-local execution manifests.
 """
 
 from __future__ import annotations
@@ -145,6 +147,7 @@ def validate_manifest(repo_root: pathlib.Path, manifest_path: pathlib.Path) -> N
         data = json.loads(manifest_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise ManifestError(f"{label}: invalid JSON: {exc}") from exc
+    require(isinstance(data, dict), f"{label}: top-level JSON must be an object")
     require(data.get("schema_version") == 1, f"{label}: unsupported schema_version")
     require(data.get("record_type") in {"run_manifest", "gap_record"}, f"{label}: invalid record_type")
     require(isinstance(data.get("id"), str) and data["id"], f"{label}: missing id")
@@ -212,7 +215,7 @@ def main() -> int:
     except ManifestError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
-    print(f"OK: verified SHA-256 for every retained artifact in {count} run manifest(s).")
+    print(f"OK: verified SHA-256 for every retained artifact in {count} benchmark evidence record(s).")
     return 0
 
 

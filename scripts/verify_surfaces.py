@@ -220,7 +220,7 @@ def main() -> int:
 
     print(
         "OK: registry paths, codex TOML, Pages workflow, ignore rules, "
-        "data-critic duplicates, benchmark caveats, FPR chart labels, and run manifests verified. "
+        "data-critic duplicates, benchmark caveats, FPR chart labels, and benchmark evidence records verified. "
         f"{len(KNOWN_FOLLOWUP_CHECKS)} follow-up checks not yet enforced."
     )
     return 0

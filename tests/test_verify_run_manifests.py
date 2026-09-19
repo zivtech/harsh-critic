@@ -55,7 +55,7 @@ class VerifyRunManifestsTest(unittest.TestCase):
         return manifest_dir
 
     def test_repository_gap_record_validates(self):
-        self.assertEqual(self.verifier.validate_directory(REPO_ROOT), 1)
+        self.assertGreaterEqual(self.verifier.validate_directory(REPO_ROOT), 1)
 
     def test_hash_mismatch_fails(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -109,10 +109,41 @@ class VerifyRunManifestsTest(unittest.TestCase):
                 with self.assertRaises(self.verifier.ManifestError):
                     self.verifier.validate_directory(root, manifest_dir.relative_to(root))
 
-    def test_symlink_and_duplicate_entries_are_rejected(self):
+    def test_partial_historical_pairs_and_non_object_json_are_rejected(self):
+        for historical_fields in (
+            {"historical_git_ref": "0" * 40},
+            {"historical_sha256": "0" * 64},
+        ):
+            with (
+                self.subTest(historical_fields=historical_fields),
+                tempfile.TemporaryDirectory() as temporary_directory,
+            ):
+                root = pathlib.Path(temporary_directory)
+                target = root / "retained.txt"
+                target.write_text("actual", encoding="utf-8")
+                artifact = {
+                    "role": "output",
+                    "path": "retained.txt",
+                    "sha256": self.verifier.sha256_path(target),
+                    **historical_fields,
+                }
+                manifest_dir = self.write_manifest(root, self.manifest(root, artifact=artifact))
+                with self.assertRaises(self.verifier.ManifestError):
+                    self.verifier.validate_directory(root, manifest_dir.relative_to(root))
+
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = pathlib.Path(temporary_directory)
-            outside = root.parent / "outside-retained.txt"
+            manifest_dir = self.write_manifest(root, [])
+            with self.assertRaises(self.verifier.ManifestError):
+                self.verifier.validate_directory(root, manifest_dir.relative_to(root))
+
+    def test_symlink_and_duplicate_entries_are_rejected(self):
+        with (
+            tempfile.TemporaryDirectory() as temporary_directory,
+            tempfile.TemporaryDirectory() as outside_directory,
+        ):
+            root = pathlib.Path(temporary_directory)
+            outside = pathlib.Path(outside_directory) / "outside-retained.txt"
             outside.write_text("outside", encoding="utf-8")
             os.symlink(outside, root / "retained.txt")
             artifact = {"role": "output", "path": "retained.txt", "sha256": self.verifier.sha256_path(outside)}
@@ -133,9 +164,12 @@ class VerifyRunManifestsTest(unittest.TestCase):
             with self.assertRaises(self.verifier.ManifestError):
                 self.verifier.validate_directory(root, manifest_dir.relative_to(root))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
+        with (
+            tempfile.TemporaryDirectory() as temporary_directory,
+            tempfile.TemporaryDirectory() as outside_directory,
+        ):
             root = pathlib.Path(temporary_directory)
-            outside_manifest = root.parent / "outside-manifest.json"
+            outside_manifest = pathlib.Path(outside_directory) / "outside-manifest.json"
             outside_manifest.write_text(json.dumps(self.manifest(root)), encoding="utf-8")
             manifest_dir = root / "manifests"
             manifest_dir.mkdir()
@@ -171,12 +205,17 @@ class VerifyRunManifestsTest(unittest.TestCase):
 
     def test_known_absent_paths_reject_parent_and_dangling_symlinks(self):
         for absent_path, setup in (
-            ("linked.json", lambda root: os.symlink(root.parent, root / "linked.json")),
-            ("missing.json", lambda root: os.symlink(root.parent / "does-not-exist", root / "missing.json")),
-            ("missing-parent/missing.json", lambda root: os.symlink(root.parent, root / "missing-parent")),
+            ("linked.json", lambda root, outside: os.symlink(outside, root / "linked.json")),
+            ("missing.json", lambda root, outside: os.symlink(outside / "does-not-exist", root / "missing.json")),
+            ("missing-parent/missing.json", lambda root, outside: os.symlink(outside, root / "missing-parent")),
         ):
-            with self.subTest(absent_path=absent_path), tempfile.TemporaryDirectory() as temporary_directory:
+            with (
+                self.subTest(absent_path=absent_path),
+                tempfile.TemporaryDirectory() as temporary_directory,
+                tempfile.TemporaryDirectory() as outside_directory,
+            ):
                 root = pathlib.Path(temporary_directory)
+                outside = pathlib.Path(outside_directory)
                 data = self.manifest(
                     root,
                     status="invalid",
@@ -190,7 +229,7 @@ class VerifyRunManifestsTest(unittest.TestCase):
                     }],
                 )
                 data.pop("skill")
-                setup(root)
+                setup(root, outside)
                 manifest_dir = self.write_manifest(root, data)
                 with self.assertRaises(self.verifier.ManifestError):
                     self.verifier.validate_directory(root, manifest_dir.relative_to(root))
